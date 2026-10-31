@@ -54,3 +54,7 @@ effects and sound. To add a thing, add it to the sim, emit an event, then draw i
 Sampled with the bots in `tests/bot.ts` over 40 seeds: a plain bot that ignores the boss has a median
 of about 4,500 and a top decile around 9,000, and survives to 17:00 about half the time. The review
 stamps sit at 3,500, 8,000 and 14,000.
+
+## Coffee machines
+
+There are three. A cup sits by each one and brews again 9 seconds after you take it.
