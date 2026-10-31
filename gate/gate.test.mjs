@@ -14,7 +14,7 @@ let repo;
 const git = (...args) => execFileSync('git', ['-C', repo, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { encoding: 'utf8' });
 
 // Each scenario is a real commit in a real repo, checked the same way the gate checks a branch.
-function runScenario(change) {
+function runScenario(change, check = script) {
   rmSync(repo, { recursive: true, force: true });
   mkdirSync(repo, { recursive: true });
   git('init', '--quiet', '-b', 'main');
@@ -35,7 +35,7 @@ function runScenario(change) {
   git('add', '--all');
   git('commit', '--quiet', '--allow-empty', '-m', message);
   const head = git('rev-parse', 'HEAD').trim();
-  const result = spawnSync(process.execPath, [script, '--repo', repo, '--base', base, '--head', head], { encoding: 'utf8' });
+  const result = spawnSync(process.execPath, [check, '--repo', repo, '--base', base, '--head', head], { encoding: 'utf8' });
   return { passed: result.status === 0, output: result.stdout };
 }
 
@@ -161,6 +161,32 @@ describe('the gate scans the whole diff for secrets', () => {
     });
     assert.equal(result.passed, false);
     assert.match(result.output, /commit message/);
+  });
+});
+
+describe('maintenance branches', () => {
+  const maintenance = join(here, 'maintenance-rules.mjs');
+
+  it('passes a change to the docs and the gate', () => {
+    const result = runScenario((root) => {
+      write('docs/notes.md', '# Notes\n')(root);
+      write('gate/extra.mjs', 'export const extra = 1;\n')(root);
+    }, maintenance);
+    assert.equal(result.passed, true, result.output);
+  });
+
+  it('fails a change to game code', () => {
+    for (const path of ['src/items/coffee.ts', 'tests/a.test.ts', 'GAME.md', 'public/index.html']) {
+      const result = runScenario(write(path, 'changed\n'), maintenance);
+      assert.equal(result.passed, false, path);
+      assert.match(result.output, /game code only changes through a shift/);
+    }
+  });
+
+  it('lets a pinned action through and fails the same hash anywhere else', () => {
+    const hash = 'a'.repeat(40);
+    assert.equal(runScenario(write('.github/workflows/x.yml', `- uses: actions/checkout@${hash} # v1\n`), maintenance).passed, true);
+    assert.equal(runScenario(write('docs/notes.md', `${hash}\n`), maintenance).passed, false);
   });
 });
 
