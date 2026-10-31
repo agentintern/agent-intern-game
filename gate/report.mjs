@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, readFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 // Runs from main, after everything else. It reads results as data and posts them to the one
@@ -12,9 +12,24 @@ const artifacts = 'artifacts';
 
 const result = (job) => results[job]?.result ?? 'skipped';
 
+// One artifact lands straight in the folder and several land in named subfolders, so nothing here
+// assumes which. Searching by file name works for both.
+function find(name, dir = artifacts) {
+  if (!existsSync(dir)) return null;
+  for (const entry of readdirSync(dir)) {
+    const path = join(dir, entry);
+    if (entry === name) return path;
+    if (statSync(path).isDirectory()) {
+      const nested = find(name, path);
+      if (nested) return nested;
+    }
+  }
+  return null;
+}
+
 function readJson(path) {
   try {
-    return existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : null;
+    return path ? JSON.parse(readFileSync(path, 'utf8')) : null;
   } catch {
     return null;
   }
@@ -36,8 +51,8 @@ const stage = (body) =>
     body: JSON.stringify({ shiftId, runUrl: RUN_URL, ...body }),
   });
 
-const rules = readJson(join(artifacts, 'rules', 'report.json'));
-const browser = readJson(join(artifacts, 'screens', 'browser.json'));
+const rules = readJson(find('report.json'));
+const browser = readJson(find('browser.json'));
 const brief = (items) => (items ?? []).slice(0, 4).join('; ');
 
 const passed = (job) => result(job) === 'success';
@@ -86,8 +101,8 @@ for (const entry of stages) {
 
 if (shipped) {
   for (const kind of ['before', 'after']) {
-    const path = join(artifacts, 'screens', `${kind}.png`);
-    if (existsSync(path)) {
+    const path = find(`${kind}.png`);
+    if (path) {
       await post(`/api/gate/shot/${shiftId}/${kind}`, { method: 'POST', headers: { 'content-type': 'image/png' }, body: readFileSync(path) });
     }
   }
