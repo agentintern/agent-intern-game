@@ -9,13 +9,14 @@ const config = JSON.parse(await readFile('config/game.json', 'utf8'));
 
 const version = process.env.GAME_VERSION || pkg.version;
 const task = process.env.GAME_TASK || config.firstTask;
+const siteOrigin = process.env.SITE_ORIGIN || config.siteOrigin;
 const commit = process.env.GAME_COMMIT || 'local';
 
 await rm('dist', { recursive: true, force: true });
 await mkdir('dist', { recursive: true });
 await cp('public', 'dist', { recursive: true });
 
-const headers = (await readFile('config/_headers', 'utf8')).replaceAll('__SITE_ORIGIN__', config.siteOrigin);
+const headers = (await readFile('config/_headers', 'utf8')).replaceAll('__SITE_ORIGIN__', siteOrigin);
 await writeFile('dist/_headers', headers);
 await writeFile('dist/health.json', `${JSON.stringify({ ok: true, version, task, commit })}\n`);
 
@@ -30,7 +31,7 @@ const options = {
   define: {
     __GAME_VERSION__: JSON.stringify(version),
     __GAME_TASK__: JSON.stringify(task),
-    __SITE_ORIGIN__: JSON.stringify(config.siteOrigin),
+    __SITE_ORIGIN__: JSON.stringify(siteOrigin),
   },
 };
 
