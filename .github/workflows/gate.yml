@@ -5,7 +5,9 @@ name: gate
 # diff rules fail anything outside src/, tests/ and GAME.md.
 #
 # Untrusted code runs only in the build and unit jobs, which hold no secrets and a read-only token.
-# Secrets appear only in jobs that handle the built files as data and never run them.
+# Secrets appear only in jobs that handle the built files as data and never run them. Those jobs are
+# deploy, roll back and tell the site. They read the secrets from the production Environment, which
+# only runs on main, so a workflow in a pushed branch can't reach them.
 #
 # Team maintenance on shift/maintenance-* skips the rules job, and every other job skips with it, so
 # those branches can't deploy or merge from here. maintenance.yml checks them, and a person merges them.
@@ -176,6 +178,7 @@ jobs:
     needs: [rules, build, unit, browser]
     runs-on: ubuntu-24.04
     timeout-minutes: 6
+    environment: production
     permissions: {}
     outputs:
       previous: ${{ steps.previous.outputs.id }}
@@ -232,6 +235,7 @@ jobs:
     if: ${{ always() && needs.deploy.result == 'success' && needs.verify.result != 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    environment: production
     permissions: {}
     steps:
       - name: Restore the last good deployment
@@ -269,6 +273,7 @@ jobs:
     if: ${{ always() && needs.rules.outputs.shift != '' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 4
+    environment: production
     permissions:
       contents: read
       pull-requests: write
