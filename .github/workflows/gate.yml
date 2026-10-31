@@ -184,8 +184,6 @@ jobs:
         with:
           name: dist
           path: shift-dist
-          github-token: ${{ github.token }}
-          run-id: ${{ github.run_id }}
       - id: previous
         name: Remember the last good deployment
         env:
