@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.shift/
+TASK.md
+RESULT.json
+GATE_ERROR.md
+.DS_Store
+*.log
