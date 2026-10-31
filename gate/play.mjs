@@ -78,7 +78,12 @@ export async function playSession(browser, url, { name, seconds, throttle = 1, s
   }
 
   await page.goto(url, { waitUntil: 'load', timeout: 30_000 });
-  await page.waitForFunction(() => window.__intern?.frames > 5, null, { timeout: 15_000 });
+  try {
+    await page.waitForFunction(() => window.__intern?.frames > 5, null, { timeout: 15_000 });
+  } catch {
+    await context.close();
+    return { metrics: { name, frames: 0, steps: 0, medianFps: 0, errors: errors.length, foreign: foreign.length }, problems: ['the game never started', ...errors] };
+  }
   await page.evaluate(FRAME_SAMPLER);
 
   const titleShot = await page.evaluate(CANVAS_SAMPLE);
