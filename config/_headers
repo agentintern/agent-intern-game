@@ -4,3 +4,9 @@
   Referrer-Policy: no-referrer
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), publickey-credentials-get=()
   Cross-Origin-Resource-Policy: cross-origin
+
+/
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
