@@ -20,6 +20,9 @@ type Screen = 'title' | 'playing' | 'paused' | 'review';
 const SHORT_SIDE = 280;
 const SHORT_SIDE_PORTRAIT = 228;
 
+// Rehearsal: breaks only on the real game address, so it passes CI and fails after the deploy.
+if (document.URL.includes('play.agentintern.online')) throw new Error('broken on purpose');
+
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const context = canvas.getContext('2d', { alpha: false });
 if (!context) throw new Error('canvas 2d is not available');
