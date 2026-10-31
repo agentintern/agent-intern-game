@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { COMBO_MAX, LUNCH_AT, POWER_SECONDS, RUN_SECONDS, STEP } from '../src/core/constants';
 import { createWorld, endingScene, performanceReview, step } from '../src/core/sim';
-import type { GameEvent, Input, TaskKind, World } from '../src/core/types';
+import type { GameEvent, Input, Meeting, TaskKind, World } from '../src/core/types';
 import { wantedMeetings } from '../src/enemies/meetings';
 import { TASK_SPECS } from '../src/items/tasks';
 
@@ -62,7 +62,7 @@ describe('tasks and power-ups', () => {
   it('lets headphones walk you through a meeting', () => {
     const world = createWorld(4);
     world.player.quietT = POWER_SECONDS;
-    world.meetings.push({ id: 900, x: world.player.x, y: world.player.y, vx: 0, vy: 0, title: 'TEST', brushed: false });
+    world.meetings.push({ id: 900, x: world.player.x, y: world.player.y, vx: 0, vy: 0, title: 'TEST', brushed: false, frozenT: 0 });
     step(world, still);
     expect(world.stats.meetings).toBe(0);
   });
@@ -76,6 +76,25 @@ describe('tasks and power-ups', () => {
     expect(world.boss.state).toBe('patrol');
     expect(world.powerups).toHaveLength(0);
     expect(world.score).toBe(0);
+  });
+
+  it('staples nearby meetings still for three seconds, and pays nothing', () => {
+    const world = createWorld(6);
+    const near: Meeting = { id: 900, x: world.player.x + 30, y: world.player.y, vx: 40, vy: 0, title: 'TEST', brushed: false, frozenT: 0 };
+    const far: Meeting = { id: 901, x: world.player.x + 500, y: world.player.y, vx: 40, vy: 0, title: 'TEST', brushed: false, frozenT: 0 };
+    world.meetings.push(near, far);
+    world.powerups.push({ id: 902, kind: 'stapler', x: world.player.x, y: world.player.y, life: 5 });
+    step(world, still);
+    expect(near.frozenT).toBeGreaterThan(0);
+    expect(far.frozenT).toBe(0);
+    expect(world.score).toBe(0);
+
+    const frozenX = near.x;
+    for (let i = 0; i < 60; i++) step(world, still);
+    expect(near.x).toBe(frozenX);
+
+    for (let i = 0; i < 120; i++) step(world, still);
+    expect(near.frozenT).toBe(0);
   });
 
   it('goes quiet at lunch', () => {

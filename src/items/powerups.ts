@@ -1,7 +1,7 @@
-import { PLAYER_RADIUS, POWER_EVERY, POWER_LIFE, POWER_SECONDS, STEP } from '../core/constants';
+import { PLAYER_RADIUS, POWER_EVERY, POWER_LIFE, POWER_SECONDS, STAPLER_FREEZE, STAPLER_RADIUS, STEP } from '../core/constants';
 import type { PowerKind, Powerup, World } from '../core/types';
 
-const KINDS: readonly PowerKind[] = ['headphones', 'auto-reply'];
+const KINDS: readonly PowerKind[] = ['headphones', 'auto-reply', 'stapler'];
 const GRAB_RADIUS = PLAYER_RADIUS + 9;
 
 function spawnPowerup(world: World): void {
@@ -27,7 +27,12 @@ export function stepPowerups(world: World): void {
     item.life -= STEP;
     if (p.stunT <= 0 && Math.hypot(item.x - p.x, item.y - p.y) < GRAB_RADIUS) {
       if (item.kind === 'headphones') p.quietT = POWER_SECONDS;
-      else p.awayT = POWER_SECONDS;
+      else if (item.kind === 'auto-reply') p.awayT = POWER_SECONDS;
+      else {
+        for (const m of world.meetings) {
+          if (Math.hypot(m.x - item.x, m.y - item.y) < STAPLER_RADIUS) m.frozenT = STAPLER_FREEZE;
+        }
+      }
       world.events.push({ type: 'power', x: item.x, y: item.y, kind: item.kind });
       world.powerups.splice(i, 1);
     } else if (item.life <= 0) world.powerups.splice(i, 1);

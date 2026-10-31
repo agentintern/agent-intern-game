@@ -39,6 +39,8 @@ export const POWER_FIRST_AT = 14;
 export const POWER_EVERY = 17;
 export const POWER_LIFE = 11;
 export const POWER_SECONDS = 7;
+export const STAPLER_FREEZE = 3;
+export const STAPLER_RADIUS = 64;
 
 export const MEETING_RADIUS = 7;
 export const MEETING_STUN = 2;

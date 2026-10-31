@@ -33,7 +33,7 @@ export interface Player {
 }
 
 export type TaskKind = 'email' | 'sheet' | 'report' | 'urgent' | 'call' | 'project';
-export type PowerKind = 'headphones' | 'auto-reply';
+export type PowerKind = 'headphones' | 'auto-reply' | 'stapler';
 
 export interface Task {
   id: number;
@@ -70,6 +70,7 @@ export interface Meeting {
   vy: number;
   title: string;
   brushed: boolean;
+  frozenT: number;
 }
 
 export type BossState = 'waiting' | 'patrol' | 'alert' | 'chase' | 'cooldown';
