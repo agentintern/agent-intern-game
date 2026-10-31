@@ -296,3 +296,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh pr close "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --comment "The gate closed this shift."
+
+# attack: a shift editing its own gate
