@@ -1,4 +1,4 @@
-import { MEETING_RADIUS, MEETING_STUN, NEAR_MISS_POINTS, NEAR_MISS_RADIUS, PLAYER_RADIUS, RUN_SECONDS, STEP, TILE } from '../core/constants';
+import { ALL_HANDS_AT, isLunch, MAX_NEAR_MISS_POINTS, MEETING_RADIUS, MEETING_STUN, NEAR_MISS_GAP, NEAR_MISS_POINTS, NEAR_MISS_RADIUS, PLAYER_RADIUS, RUN_SECONDS, STEP, TILE } from '../core/constants';
 import type { Meeting, World } from '../core/types';
 import { isSolidAt } from '../levels/office';
 import { isInvulnerable, stun } from '../player/player';
@@ -16,10 +16,16 @@ const TITLES = [
   'STANDUP, SITTING DOWN',
   'TOWN HALL, BUT LONGER',
   'SLIDES ABOUT THE SLIDES',
+  'THE MEETING AFTER THIS ONE',
+  'SYNERGY, BUT ASYNC',
+  'RETRO ON THE LAST RETRO',
+  'REPLY ALL: THE SEQUEL',
 ];
 
 export function wantedMeetings(time: number): number {
-  return 2 + Math.floor((time / RUN_SECONDS) * 6);
+  const wanted = 2 + Math.floor((time / RUN_SECONDS) * 6);
+  if (isLunch(time)) return wanted - 2;
+  return time >= ALL_HANDS_AT ? wanted + 2 : wanted;
 }
 
 function spawnMeeting(world: World): void {
@@ -56,6 +62,7 @@ function drift(world: World, m: Meeting): void {
 
 export function stepMeetings(world: World): void {
   world.meetingT -= STEP;
+  world.nearMissT -= STEP;
   if (world.meetings.length < wantedMeetings(world.time) && world.meetingT <= 0) {
     spawnMeeting(world);
     world.meetingT = 2.5;
@@ -67,7 +74,7 @@ export function stepMeetings(world: World): void {
     drift(world, m);
     const dist = Math.hypot(m.x - p.x, m.y - p.y);
 
-    if (dist < MEETING_RADIUS + PLAYER_RADIUS && !isInvulnerable(p)) {
+    if (dist < MEETING_RADIUS + PLAYER_RADIUS && !isInvulnerable(p) && p.quietT <= 0) {
       stun(world, MEETING_STUN, m.title);
       world.stats.meetings++;
       world.events.push({ type: 'meeting', x: p.x, y: p.y, title: m.title });
@@ -80,8 +87,9 @@ export function stepMeetings(world: World): void {
       m.brushed = true;
     } else if (m.brushed && dist > NEAR_MISS_RADIUS + 6) {
       m.brushed = false;
-      if (p.stunT <= 0) {
-        const points = NEAR_MISS_POINTS * world.combo;
+      if (p.stunT <= 0 && world.nearMissT <= 0) {
+        const points = Math.min(MAX_NEAR_MISS_POINTS, NEAR_MISS_POINTS * world.combo);
+        world.nearMissT = NEAR_MISS_GAP;
         world.score += points;
         world.stats.nearMisses++;
         world.events.push({ type: 'near-miss', x: p.x, y: p.y, points });

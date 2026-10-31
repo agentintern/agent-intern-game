@@ -17,7 +17,7 @@ export interface Popup {
   life: number;
 }
 
-const MAX_PARTICLES = 90;
+const MAX_PARTICLES = 140;
 
 export class Effects {
   particles: Particle[] = [];
@@ -25,6 +25,10 @@ export class Effects {
   shake = 0;
   flash = 0;
   flashColor = '#ffffff';
+  // Seconds the simulation stays frozen. Only main.ts acts on it, so a replay never sees it.
+  hitstop = 0;
+  banner = '';
+  bannerT = 0;
 
   burst(x: number, y: number, color: string, count: number, speed = 60): void {
     for (let i = 0; i < count && this.particles.length < MAX_PARTICLES; i++) {
@@ -67,6 +71,8 @@ export class Effects {
     }
     this.shake = Math.max(0, this.shake - dt * 5);
     this.flash = Math.max(0, this.flash - dt * 3);
+    this.hitstop = Math.max(0, this.hitstop - dt);
+    this.bannerT = Math.max(0, this.bannerT - dt);
   }
 
   clear(): void {
@@ -74,5 +80,7 @@ export class Effects {
     this.popups.length = 0;
     this.shake = 0;
     this.flash = 0;
+    this.hitstop = 0;
+    this.bannerT = 0;
   }
 }

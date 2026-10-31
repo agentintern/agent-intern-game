@@ -21,10 +21,11 @@ export const PIXELS: Record<string, string> = {
   v: VIOLET,
   c: COFFEE,
   t: '#f2c29b', // skin
-  T: '#c98f6b', // skin shade
-  b: '#3a4a78', // shirt blue
-  B: '#2a3558', // shirt blue dark
-  h: '#4a2f22', // hair
+  a: '#c3ccd8', // steel light
+  e: '#929eae', // steel
+  f: '#5d6878', // steel dark
+  o: '#ff9a3d', // visor glow
+  O: '#ffeccf', // visor core
   g: '#6d7482', // suit grey
   G: '#4a505c', // suit grey dark
   q: '#b9a7ea', // pale violet

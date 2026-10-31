@@ -20,6 +20,8 @@ export class Controls {
   onPrimary: () => void = () => {};
   onPause: () => void = () => {};
   onMute: () => void = () => {};
+  onMenu: (step: number) => void = () => {};
+  onTap: (x: number, y: number) => void = () => {};
   canDash: () => boolean = () => false;
 
   constructor(private target: HTMLElement) {
@@ -37,8 +39,10 @@ export class Controls {
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
     if (e.repeat) return;
     this.keys.add(e.code);
-    if (e.code === 'Enter' || e.code === 'Space') this.onPrimary();
     if (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') this.dashQueued = true;
+    if (e.code === 'Enter' || e.code === 'Space') this.onPrimary();
+    if (e.code === 'ArrowUp' || e.code === 'KeyW') this.onMenu(-1);
+    if (e.code === 'ArrowDown' || e.code === 'KeyS') this.onMenu(1);
     if (e.code === 'KeyP' || e.code === 'Escape') this.onPause();
     if (e.code === 'KeyM') this.onMute();
   };
@@ -50,11 +54,14 @@ export class Controls {
 
   private pointerDown = (e: PointerEvent): void => {
     e.preventDefault();
+    // Cancelling the press also cancels focus, and an embedded game needs focus for the keyboard.
+    window.focus();
     if (e.pointerType === 'touch') this.usingTouch = true;
-    this.onPrimary();
     const rect = this.target.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+    this.onTap(x, y);
+    this.onPrimary();
     const dash = this.dashButton();
     if (this.canDash() && Math.hypot(x - dash.x, y - dash.y) < dash.r) {
       this.dashQueued = true;

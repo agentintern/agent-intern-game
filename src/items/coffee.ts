@@ -1,4 +1,4 @@
-import { PLAYER_RADIUS, STEP } from '../core/constants';
+import { COMBO_SECONDS, PLAYER_RADIUS, STEP } from '../core/constants';
 import type { Coffee, World } from '../core/types';
 import type { Point } from '../levels/office';
 import { drinkCoffee } from '../player/player';
@@ -25,6 +25,7 @@ export function stepCoffee(world: World): void {
     if (Math.hypot(cup.x - p.x, cup.y - p.y) < SIP_RADIUS) {
       drinkCoffee(p);
       world.stats.coffees++;
+      if (world.comboT > 0) world.comboT = COMBO_SECONDS;
       world.coffeeCooldowns[cup.spot] = BREW_SECONDS;
       world.events.push({ type: 'coffee', x: cup.x, y: cup.y });
       world.coffees.splice(i, 1);

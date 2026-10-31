@@ -1,6 +1,8 @@
 import { TILE } from '../core/constants';
 import { charAt, COLS, ROWS, type Office } from '../levels/office';
-import { COFFEE, INK, MINT, PAPER, PAPER_DIM, SKY, STAMP, VIOLET, WHITE } from './palette';
+import { drawText, textWidth } from './font';
+import { NOTES, POSTERS } from './jokes';
+import { COFFEE, HIGHLIGHT, INK, MINT, PAPER, PAPER_DIM, SKY, STAMP, VIOLET, WHITE } from './palette';
 
 const CARPET_A = '#5b6577';
 const CARPET_B = '#566072';
@@ -202,6 +204,16 @@ export function paintOffice(office: Office): HTMLCanvasElement {
         default: break;
       }
     }
+  }
+
+  ctx.fillStyle = HIGHLIGHT;
+  for (const note of NOTES) ctx.fillRect(note.tx * TILE + 11, note.ty * TILE + 9, 4, 4);
+  for (const poster of POSTERS) {
+    const x = poster.tx * TILE + 2;
+    const y = poster.ty * TILE + 6;
+    ctx.fillStyle = PAPER;
+    ctx.fillRect(x, y, textWidth(poster.text) + 4, 9);
+    drawText(ctx, poster.text, x + 2, y + 1, STAMP);
   }
   return canvas;
 }

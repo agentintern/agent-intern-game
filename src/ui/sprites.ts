@@ -32,58 +32,64 @@ function flipped(source: Sprite): Sprite {
 }
 
 const INTERN_DOWN = [
-  '....hhhhh...',
-  '...hhhhhhh..',
-  '..hhhhhhhhh.',
-  '..htttttth..',
-  '..tktttktt..',
-  '..ttttttttt.',
-  '...ttTTtt...',
+  '.....ee.....',
+  '..aaaaaaaa..',
+  '.aeeeeeeeef.',
+  '.ekkkkkkkkf.',
+  '.ekOokkoOkf.',
+  '.ekkkkkkkkf.',
+  '..ffffffff..',
   '..wwwrrwww..',
-  '.twwwrrwwwt.',
-  '.twwwrrwwwt.',
-  '..wwwrrwww..',
-  '..bbbbbbbb..',
-  '..bbb..bbb..',
+  '.wwwwrrwwww.',
+  '.wwwwrrssww.',
+  '.e.wwrrdd.e.',
+  '.a.wwwrww.a.',
+  '...kkkkkk...',
+  '...ee..ee...',
+  '...kk..kk...',
 ];
-const INTERN_DOWN_B = [...INTERN_DOWN.slice(0, 11), '..bbbbbbbb..', '..kkk..bbb..'];
-const INTERN_DOWN_C = [...INTERN_DOWN.slice(0, 11), '..bbbbbbbb..', '..bbb..kkk..'];
+const INTERN_DOWN_B = [...INTERN_DOWN.slice(0, 13), '...ee..kk...', '...kk.......'];
+const INTERN_DOWN_C = [...INTERN_DOWN.slice(0, 13), '...kk..ee...', '.......kk...'];
 
 const INTERN_UP = [
-  '....hhhhh...',
-  '...hhhhhhh..',
-  '..hhhhhhhhh.',
-  '..hhhhhhhhh.',
-  '..hhhhhhhhh.',
-  '..thhhhhhht.',
-  '...ttttt....',
+  '.....ee.....',
+  '..aaaaaaaa..',
+  '.aeeeeeeeef.',
+  '.eefffffeef.',
+  '.eeeeeeeeef.',
+  '.eefffffeef.',
+  '..ffffffff..',
   '..wwwwwwww..',
-  '.twwwwwwwwt.',
-  '.twwwwwwwwt.',
-  '..wwwwwwww..',
-  '..bbbbbbbb..',
-  '..bbb..bbb..',
+  '.wwwwwwwwww.',
+  '.wwwwwwwwww.',
+  '.e.wwwwww.e.',
+  '.a.wwwwww.a.',
+  '...kkkkkk...',
+  '...ee..ee...',
+  '...kk..kk...',
 ];
-const INTERN_UP_B = [...INTERN_UP.slice(0, 11), '..bbbbbbbb..', '..kkk..bbb..'];
-const INTERN_UP_C = [...INTERN_UP.slice(0, 11), '..bbbbbbbb..', '..bbb..kkk..'];
+const INTERN_UP_B = [...INTERN_UP.slice(0, 13), '...ee..kk...', '...kk.......'];
+const INTERN_UP_C = [...INTERN_UP.slice(0, 13), '...kk..ee...', '.......kk...'];
 
 const INTERN_SIDE = [
-  '...hhhhhh...',
-  '..hhhhhhhh..',
-  '..hhhhhhhhh.',
-  '..hhhttttt..',
-  '..hhttttkt..',
-  '...tttttttt.',
-  '...ttttTT...',
-  '...wwwwrr...',
-  '...wwwtrw...',
-  '...wwwtww...',
-  '...wwwwww...',
-  '...bbbbbb...',
-  '...bb..bb...',
+  '....ee......',
+  '..aaaaaaaa..',
+  '..aeeeeeeef.',
+  '..aeekkkkkk.',
+  '..aeekkOoOk.',
+  '..aeekkkkkk.',
+  '...ffffffff.',
+  '...wwwwwrr..',
+  '...wwwwwrr..',
+  '...weewwrs..',
+  '...weewwrd..',
+  '...waawww...',
+  '...kkkkkk...',
+  '....ee.ee...',
+  '....kk.kk...',
 ];
-const INTERN_SIDE_B = [...INTERN_SIDE.slice(0, 11), '...bbbbbb...', '..kkb..bbk..'];
-const INTERN_SIDE_C = [...INTERN_SIDE.slice(0, 11), '...bbbbbb...', '...bbkkbb...'];
+const INTERN_SIDE_B = [...INTERN_SIDE.slice(0, 13), '..ee....ee..', '.kk......kk.'];
+const INTERN_SIDE_C = [...INTERN_SIDE.slice(0, 13), '.....eeee...', '.....kkkk...'];
 
 const BOSS_DOWN = [
   '....GGGGGG....',
@@ -149,6 +155,42 @@ const TASKS: Record<string, readonly string[]> = {
     '.pkkkkkkpd.',
     '.ppppppppd.',
     '..ddddddd..',
+  ],
+  call: [
+    '.vvvvvvvvv.',
+    'vvvvvvvvvvv',
+    'vvq.....qvv',
+    '...vvvvv...',
+    '..vqvqvqv..',
+    '..vvqvqvv..',
+    '..vqvqvqv..',
+  ],
+  project: [
+    'cccc.......',
+    'cyyyccccccc',
+    'cwwwwwwwwwc',
+    'cyyyyyyyyyc',
+    'cwwwwwwwwwc',
+    'cyyyyyyyyyc',
+    'ccccccccccc',
+  ],
+  headphones: [
+    '...ppppp...',
+    '..p.....p..',
+    '.p.......p.',
+    '.p.......p.',
+    'mmm.....mmm',
+    'mwm.....mwm',
+    'mmm.....mmm',
+  ],
+  'auto-reply': [
+    'wwwwwwwwwww',
+    'wmwwwwwwwmw',
+    'wwmmmmmmmww',
+    'wwwwwwwwwww',
+    'wwwwmwwwwww',
+    'wwwmmmmmmww',
+    'wwwwmwwwwmw',
   ],
   urgent: [
     '....rrr....',

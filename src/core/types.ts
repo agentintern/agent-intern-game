@@ -28,9 +28,12 @@ export interface Player {
   iframes: number;
   strikes: number;
   walkT: number;
+  quietT: number;
+  awayT: number;
 }
 
-export type TaskKind = 'email' | 'sheet' | 'report' | 'urgent';
+export type TaskKind = 'email' | 'sheet' | 'report' | 'urgent' | 'call' | 'project';
+export type PowerKind = 'headphones' | 'auto-reply';
 
 export interface Task {
   id: number;
@@ -49,6 +52,14 @@ export interface Coffee {
   x: number;
   y: number;
   spot: number;
+}
+
+export interface Powerup {
+  id: number;
+  kind: PowerKind;
+  x: number;
+  y: number;
+  life: number;
 }
 
 export interface Meeting {
@@ -87,6 +98,8 @@ export type GameEvent =
   | { type: 'near-miss'; x: number; y: number; points: number }
   | { type: 'boss-alert'; x: number; y: number }
   | { type: 'caught'; x: number; y: number; strikes: number }
+  | { type: 'power'; x: number; y: number; kind: PowerKind }
+  | { type: 'beat'; text: string }
   | { type: 'rush' }
   | { type: 'over'; reason: EndReason };
 
@@ -113,12 +126,16 @@ export interface World {
   nextId: number;
   taskT: number;
   meetingT: number;
+  powerT: number;
+  nearMissT: number;
+  beat: number;
   player: Player;
   boss: Boss;
   tasks: Task[];
   coffees: Coffee[];
   coffeeCooldowns: number[];
   meetings: Meeting[];
+  powerups: Powerup[];
   stats: Stats;
   events: GameEvent[];
 }

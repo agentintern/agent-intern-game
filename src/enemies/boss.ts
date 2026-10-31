@@ -7,7 +7,7 @@ import type { Boss, Facing, World } from '../core/types';
 import { distanceField, hasLineOfSight, nextStep, type Point } from '../levels/office';
 import { isInvulnerable, stun } from '../player/player';
 
-const LINES = ['MY OFFICE. NOW.', 'GOT A MINUTE?', 'WE NEED TO TALK', 'PER MY LAST EMAIL...'];
+const LINES = ['MY OFFICE. NOW.', 'GOT A MINUTE?', 'WE NEED TO TALK', 'PER MY LAST EMAIL...', 'YOUR CALENDAR LOOKED OPEN'];
 
 export function createBoss(start: Point): Boss {
   return {
@@ -27,6 +27,7 @@ export function createBoss(start: Point): Boss {
 
 export function canSeePlayer(world: World): boolean {
   const { boss, player: p, office } = world;
+  if (p.awayT > 0) return false;
   const dx = p.x - boss.x;
   const dy = p.y - boss.y;
   const dist = Math.hypot(dx, dy);
@@ -114,9 +115,10 @@ export function stepBoss(world: World): void {
       if (boss.fieldT <= 0) headFor(world, p);
       walkField(world, BOSS_CHASE_SPEED * (1 + lateness * 0.2));
       boss.lostT = canSeePlayer(world) ? BOSS_GIVE_UP_SECONDS : boss.lostT - STEP;
-      if (boss.lostT <= 0) {
+      if (boss.lostT <= 0 || p.awayT > 0) {
         boss.state = 'patrol';
         headFor(world, world.office.bossRoute[boss.waypoint] as Point);
+        return;
       }
       if (Math.hypot(p.x - boss.x, p.y - boss.y) < BOSS_RADIUS + PLAYER_RADIUS && !isInvulnerable(p)) {
         p.strikes++;
