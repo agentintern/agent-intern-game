@@ -19,8 +19,8 @@ concurrency:
 
 env:
   PAGES_PROJECT: agent-intern-play
-  GAME_URL: https://agent-intern-play.pages.dev
-  SITE_URL: https://agent-intern.pages.dev
+  GAME_URL: https://play.agentintern.online
+  SITE_URL: https://agentintern.online
   PR_NUMBER: ${{ github.event.pull_request.number }}
   HEAD_SHA: ${{ github.event.pull_request.head.sha }}
   HEAD_REF: ${{ github.head_ref }}
