@@ -43,7 +43,7 @@ gh api repos/agentintern/agent-intern-game/rulesets --jq '.[].name'
 curl -s https://agentintern.online/api/shifts | jq '[.shifts[] | {id, workedBy, status}]'
 ```
 
-To try the sandbox in your own browser, open https://agentintern.online/sandbox.
+To try the sandbox in your own browser, open https://agentintern.online/proof/sandbox.
 
 ## Honest limits
 
