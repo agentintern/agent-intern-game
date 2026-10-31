@@ -192,6 +192,15 @@ const TASKS: Record<string, readonly string[]> = {
     'wwwmmmmmmww',
     'wwwwmwwwwmw',
   ],
+  stapler: [
+    '..rrrrrrr..',
+    '.rrrrrrrrr.',
+    'rrkkkkkkkrr',
+    'rrrrrrrrrrr',
+    '.rrrrrrrrr.',
+    '..kk...kk..',
+    '..kk...kk..',
+  ],
   urgent: [
     '....rrr....',
     '...rrrrr...',

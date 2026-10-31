@@ -288,9 +288,16 @@ function drawStunCard(view: View, world: World): void {
 function drawMeetings(ctx: CanvasRenderingContext2D, view: View, world: World, from: number, to: number): void {
   for (const m of world.meetings) {
     if (m.y < from || m.y >= to) continue;
-    const frame = Math.floor(world.time * 5 + m.id) % 2;
+    const frozen = m.frozenT > 0;
+    const frame = frozen ? 0 : Math.floor(world.time * 5 + m.id) % 2;
     shadow(ctx, m.x, m.y + 5, 10);
     ctx.drawImage(view.sprites.meeting[frame] as Sprite, Math.round(m.x - 6), Math.round(m.y - 6));
+    if (frozen) {
+      ctx.fillStyle = 'rgba(127,184,232,0.4)';
+      ctx.beginPath();
+      ctx.arc(m.x, m.y, 8, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 }
 

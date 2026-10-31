@@ -76,7 +76,7 @@ describe('simulation', () => {
     const world = createWorld(5);
     world.combo = 4;
     world.comboT = 5;
-    world.meetings.push({ id: 900, x: world.player.x, y: world.player.y, vx: 0, vy: 0, title: 'TEST', brushed: false });
+    world.meetings.push({ id: 900, x: world.player.x, y: world.player.y, vx: 0, vy: 0, title: 'TEST', brushed: false, frozenT: 0 });
     step(world, still);
     expect(world.player.stunT).toBeGreaterThan(0);
     expect(world.combo).toBe(1);
@@ -86,7 +86,7 @@ describe('simulation', () => {
   it('dashes through a meeting without stopping', () => {
     const world = createWorld(6);
     step(world, { moveX: 1, moveY: 0, dash: true });
-    world.meetings.push({ id: 901, x: world.player.x + 3, y: world.player.y, vx: 0, vy: 0, title: 'TEST', brushed: false });
+    world.meetings.push({ id: 901, x: world.player.x + 3, y: world.player.y, vx: 0, vy: 0, title: 'TEST', brushed: false, frozenT: 0 });
     step(world, { moveX: 1, moveY: 0, dash: false });
     expect(world.stats.meetings).toBe(0);
   });

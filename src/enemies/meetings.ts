@@ -45,12 +45,14 @@ function spawnMeeting(world: World): void {
       vy: Math.sin(angle) * speed,
       title: rng.pick(TITLES),
       brushed: false,
+      frozenT: 0,
     });
     return;
   }
 }
 
 function drift(world: World, m: Meeting): void {
+  if (m.frozenT > 0) return;
   const r = MEETING_RADIUS;
   const nx = m.x + m.vx * STEP;
   if (isSolidAt(world.office, nx + Math.sign(m.vx) * r, m.y)) m.vx = -m.vx;
@@ -71,6 +73,7 @@ export function stepMeetings(world: World): void {
   const p = world.player;
   for (let i = world.meetings.length - 1; i >= 0; i--) {
     const m = world.meetings[i] as Meeting;
+    m.frozenT = Math.max(0, m.frozenT - STEP);
     drift(world, m);
     const dist = Math.hypot(m.x - p.x, m.y - p.y);
 

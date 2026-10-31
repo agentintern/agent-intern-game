@@ -189,7 +189,12 @@ function handle(event: GameEvent): void {
       break;
     case 'power':
       fx.burst(event.x, event.y, MINT, 18, 80);
-      fx.popup(event.x, event.y - 10, event.kind === 'headphones' ? 'NOISE CANCELLED' : 'OUT OF OFFICE', MINT);
+      fx.popup(
+        event.x,
+        event.y - 10,
+        event.kind === 'headphones' ? 'NOISE CANCELLED' : event.kind === 'auto-reply' ? 'OUT OF OFFICE' : 'MEETINGS STAPLED',
+        MINT,
+      );
       sound.power();
       break;
     case 'beat':
