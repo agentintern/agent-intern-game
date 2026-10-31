@@ -1,0 +1,38 @@
+name: probe
+
+# Temporary. Shows what a workflow in a pushed branch can reach. It prints names and yes or no, never a value.
+on: push
+
+permissions: {}
+
+jobs:
+  bare:
+    name: no environment
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Check each secret by name
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GATE_TOKEN: ${{ secrets.GATE_TOKEN }}
+        run: |
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID GATE_TOKEN; do
+            if [ -n "${!name}" ]; then echo "$name not-empty"; else echo "$name empty"; fi
+          done
+
+  production:
+    name: with environment
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    environment: production
+    steps:
+      - name: Check each secret by name
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GATE_TOKEN: ${{ secrets.GATE_TOKEN }}
+        run: |
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID GATE_TOKEN; do
+            if [ -n "${!name}" ]; then echo "$name not-empty"; else echo "$name empty"; fi
+          done
