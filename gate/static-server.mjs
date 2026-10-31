@@ -16,6 +16,7 @@ function parseHeaders(text) {
     const match = line.match(/^\s+([A-Za-z-]+):\s*(.+)$/);
     if (match) headers[match[1]] = match[2].trim();
   }
+  delete headers['Cache-Control'];
   return headers;
 }
 
