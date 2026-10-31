@@ -6,6 +6,9 @@ name: gate
 #
 # Untrusted code runs only in the build and unit jobs, which hold no secrets and a read-only token.
 # Secrets appear only in jobs that handle the built files as data and never run them.
+#
+# Team maintenance on shift/maintenance-* skips the rules job, and every other job skips with it, so
+# those branches can't deploy or merge from here. maintenance.yml checks them, and a person merges them.
 on:
   pull_request_target:
     types: [opened, synchronize, reopened]
@@ -28,7 +31,7 @@ env:
 jobs:
   rules:
     name: diff rules and secret scan
-    if: ${{ startsWith(github.head_ref, 'shift/') && github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ startsWith(github.head_ref, 'shift/') && !startsWith(github.head_ref, 'shift/maintenance-') && github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:

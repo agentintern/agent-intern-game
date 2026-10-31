@@ -1,0 +1,43 @@
+name: maintenance
+
+# Team changes to docs, CI and the gate, on shift/maintenance-* branches. They never deploy, and a person
+# merges them. pull_request runs the branch's copy of this file, so this catches mistakes, and it doesn't
+# replace a person reading the diff. It names no secrets and has a read-only token.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: maintenance-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: maintenance checks
+    # The branches filter above reads the base branch, so the head branch is checked here.
+    if: ${{ startsWith(github.head_ref, 'shift/maintenance-') && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx tsc --noEmit
+      - run: npx vitest run
+      - run: node --test gate/gate.test.mjs
+      - name: Check the diff and scan it for secrets
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node gate/maintenance-rules.mjs --base "$BASE_SHA" --head "$HEAD_SHA"
