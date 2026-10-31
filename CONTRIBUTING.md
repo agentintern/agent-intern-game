@@ -18,3 +18,13 @@ Team work on docs, CI and the gate uses a `shift/maintenance-*` branch.
 - `maintenance.yml` runs the type check, unit tests, gate tests, a diff check and a secret scan. The diff check fails
   anything that touches `src/`, `tests/`, `GAME.md` or `public/`, because those only change through a shift.
 - A person reads the diff and merges it. Nothing merges these on its own.
+- The ruleset `maintenance branches stay closed` has no exceptions, because GitHub counts the deploy key as the account
+  that owns the repo. A person turns it off to open the branch and on again straight after. Every later push to the
+  branch needs the same:
+
+```
+repo=agentintern/agent-intern-game
+gh api -X PUT repos/$repo/rulesets/26289544 -f enforcement=disabled
+git push -u origin shift/maintenance-your-change
+gh api -X PUT repos/$repo/rulesets/26289544 -f enforcement=active
+```
