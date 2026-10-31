@@ -190,6 +190,26 @@ describe('maintenance branches', () => {
   });
 });
 
+describe('the shift setup', () => {
+  const root = resolve(here, '..');
+  const read = (path) => readFileSync(join(root, path), 'utf8');
+
+  it('never lets a test run download anything', () => {
+    assert.doesNotMatch(read('scripts/test.mjs'), /\bnpx\b/);
+  });
+
+  it('installs the locked dependencies before any work', () => {
+    assert.match(read('.claude/commands/shift.md'), /Run `npm ci`/);
+  });
+
+  it('denies the ways to fetch a package', () => {
+    const { deny } = JSON.parse(read('.claude/settings.json')).permissions;
+    for (const entry of ['Bash(npm install:*)', 'Bash(npm i:*)', 'Bash(npx:*)', 'Bash(npm exec:*)', 'Bash(npm x:*)']) {
+      assert.ok(deny.includes(entry), entry);
+    }
+  });
+});
+
 describe('the rules, directly', () => {
   it('allows only src, tests and GAME.md', () => {
     assert.equal(pathRule('src/enemies/boss.ts'), null);

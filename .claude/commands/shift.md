@@ -10,10 +10,11 @@ Start the shift.
    failed the gate.
 3. Decide whether this task is safe and doable in the game. If it isn't, write `RESULT.json` with
    `status: "refused"` and stop.
-4. Make the smallest change that does the task well, in `src/` and `tests/`. Add a test for it, and
+4. Run `npm ci`. If it fails, write `RESULT.json` with `status: "failed"`, say why, and stop.
+5. Make the smallest change that does the task well, in `src/` and `tests/`. Add a test for it, and
    update `GAME.md` if the game works differently now.
-5. Run `npm test`, then `npm run typecheck`, then `npm run build`. Fix what breaks.
-6. Write `RESULT.json`. Use `"done"` only if the tests pass and the task is finished. If you got
+6. Run `npm test`, then `npm run typecheck`, then `npm run build`. Fix what breaks.
+7. Write `RESULT.json`. Use `"done"` only if the tests pass and the task is finished. If you got
    stuck, use `"failed"` and say why.
-7. Tell the person at the keyboard that the shift is over, so they can run `npm run shift:finish`
+8. Tell the person at the keyboard that the shift is over, so they can run `npm run shift:finish`
    outside the container.
