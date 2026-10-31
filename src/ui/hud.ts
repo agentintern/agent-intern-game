@@ -1,20 +1,31 @@
 import { COMBO_SECONDS, ENERGY_MAX, MAX_STRIKES } from '../core/constants';
-import { officeClock } from '../core/sim';
+import { POWER_SECONDS } from '../core/constants';
+import { nextGoal, officeClock } from '../core/sim';
 import type { World } from '../core/types';
+import type { Effects } from './effects';
 import { drawText, drawTextCentered, textWidth } from './font';
-import { HIGHLIGHT, INK, MINT, PAPER, PAPER_DIM, SKY, STAMP, WHITE } from './palette';
+import { HIGHLIGHT, INK, MINT, PAPER, PAPER_DIM, SKY, STAMP, VIOLET, WHITE } from './palette';
 import type { Stick } from './input';
 import type { View } from './render';
 
 const BAR_H = 15;
 
-export function drawHud(view: View, world: World): void {
+// One line of text under the bar, with a backing so it reads over the office.
+function strip(view: View, text: string, color: string): void {
+  const w = textWidth(text) + 6;
+  view.ctx.fillStyle = INK;
+  view.ctx.fillRect(Math.round(view.width / 2 - w / 2), BAR_H, w, 11);
+  drawTextCentered(view.ctx, text, view.width / 2, BAR_H + 2, color);
+}
+
+export function drawHud(view: View, world: World, label: string, fx: Effects, showGoal: boolean): void {
   const { ctx, width } = view;
   ctx.fillStyle = INK;
   ctx.fillRect(0, 0, width, BAR_H);
 
   const clockColor = world.rush ? STAMP : PAPER;
   drawText(ctx, officeClock(world.time), 4, 4, clockColor);
+  drawText(ctx, label, 38, 4, PAPER_DIM);
 
   const score = String(world.score);
   const scoreX = Math.round(width / 2 - textWidth(score) / 2);
@@ -44,11 +55,15 @@ export function drawHud(view: View, world: World): void {
   ctx.fillStyle = energy < 0.25 ? STAMP : world.player.wiredT > 0 ? HIGHLIGHT : SKY;
   ctx.fillRect(barX, 5, Math.ceil(barW * energy), 5);
 
-  if (world.player.energy <= 0) {
-    drawTextCentered(ctx, 'NEED COFFEE', width / 2, BAR_H + 4, STAMP);
-  } else if (world.rush && Math.floor(world.time * 3) % 2 === 0) {
-    drawTextCentered(ctx, '5 O\'CLOCK RUSH', width / 2, BAR_H + 4, HIGHLIGHT);
-  }
+  ctx.fillStyle = MINT;
+  ctx.fillRect(4, BAR_H + 2, Math.ceil((world.player.quietT / POWER_SECONDS) * 30), 2);
+  ctx.fillStyle = VIOLET;
+  ctx.fillRect(4, BAR_H + 6, Math.ceil((world.player.awayT / POWER_SECONDS) * 30), 2);
+
+  if (world.player.energy <= 0) strip(view, 'NEED COFFEE', STAMP);
+  else if (fx.bannerT > 0) strip(view, fx.banner, HIGHLIGHT);
+  else if (world.rush) strip(view, "5 O'CLOCK RUSH", Math.floor(world.time * 3) % 2 === 0 ? HIGHLIGHT : STAMP);
+  else if (showGoal) strip(view, nextGoal(world.score), PAPER_DIM);
 }
 
 export function drawTouchControls(view: View, stick: Stick, scale: number, dash: { x: number; y: number; r: number }, ready: boolean): void {

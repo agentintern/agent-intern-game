@@ -3,6 +3,10 @@ export const TILE = 16;
 export const STEP = 1 / 60;
 export const RUN_SECONDS = 90;
 export const RUSH_AT = 68;
+export const LUNCH_AT = 33.75;
+export const LUNCH_ENDS = 45;
+export const ALL_HANDS_AT = 56.25;
+export const isLunch = (time: number): boolean => time >= LUNCH_AT && time < LUNCH_ENDS;
 
 export const PLAYER_SPEED = 84;
 export const PLAYER_RADIUS = 5;
@@ -25,6 +29,16 @@ export const COMBO_MAX = 5;
 export const RUSH_MULTIPLIER = 1.5;
 export const NEAR_MISS_POINTS = 25;
 export const NEAR_MISS_RADIUS = 17;
+export const NEAR_MISS_GAP = 0.5;
+
+// The site rejects a run above these, so no single award may pass them.
+export const MAX_TASK_POINTS = 1650;
+export const MAX_NEAR_MISS_POINTS = 125;
+
+export const POWER_FIRST_AT = 14;
+export const POWER_EVERY = 17;
+export const POWER_LIFE = 11;
+export const POWER_SECONDS = 7;
 
 export const MEETING_RADIUS = 7;
 export const MEETING_STUN = 2;

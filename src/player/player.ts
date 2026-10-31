@@ -1,6 +1,6 @@
 import {
   COFFEE_ENERGY, DASH_COOLDOWN, DASH_COST, DASH_FACTOR, DASH_SECONDS, ENERGY_DRAIN, ENERGY_MAX,
-  IFRAMES_AFTER_STUN, MAX_STRIKES, PLAYER_RADIUS, PLAYER_SPEED, SLUGGISH_FACTOR, STEP, WIRED_FACTOR,
+  IFRAMES_AFTER_STUN, isLunch, MAX_STRIKES, PLAYER_RADIUS, PLAYER_SPEED, SLUGGISH_FACTOR, STEP, WIRED_FACTOR,
   WIRED_SECONDS,
 } from '../core/constants';
 import type { Facing, Input, Player, World } from '../core/types';
@@ -24,6 +24,8 @@ export function createPlayer(start: Point): Player {
     iframes: 0,
     strikes: 0,
     walkT: 0,
+    quietT: 0,
+    awayT: 0,
   };
 }
 
@@ -59,7 +61,9 @@ export function stepPlayer(world: World, input: Input): void {
   p.wiredT = Math.max(0, p.wiredT - STEP);
   p.dashCooldown = Math.max(0, p.dashCooldown - STEP);
   p.iframes = Math.max(0, p.iframes - STEP);
-  p.energy = Math.max(0, p.energy - ENERGY_DRAIN * STEP);
+  p.quietT = Math.max(0, p.quietT - STEP);
+  p.awayT = Math.max(0, p.awayT - STEP);
+  p.energy = Math.max(0, p.energy - ENERGY_DRAIN * (isLunch(world.time) ? 0.5 : 1) * STEP);
 
   if (p.stunT > 0) {
     p.stunT -= STEP;
