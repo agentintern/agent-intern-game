@@ -47,7 +47,8 @@ To try the sandbox in your own browser, open https://agentintern.online/sandbox.
 
 ## Honest limits
 
-- No real intern shift has run yet. Everything so far is a labeled rehearsal or a team change.
+- No real intern shift has run yet. Everything so far is a labeled rehearsal, a team change or a shift nobody
+  worked.
 - Nobody outside the project has reviewed this. There has been no audit.
 - The content rules can be evaded, because regexes can't fully police JavaScript. The CSP and sandbox are the wall.
 - The gate plays the game with a simple bot, in a browser. It can't tell you the game is any fun.
