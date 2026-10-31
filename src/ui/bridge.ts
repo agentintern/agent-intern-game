@@ -1,6 +1,11 @@
 import { GAME_VERSION, SITE_ORIGIN } from '../version';
 import type { World } from '../core/types';
 
+// Read-only numbers for the browser test in the gate.
+export function exposeDiagnostics(diag: object): void {
+  Object.defineProperty(window, '__intern', { value: diag, writable: false });
+}
+
 // The game has no network access. A finished run is handed to the page that embeds it,
 // and that page decides what to do with the numbers. This is the only message it sends.
 export function reportRun(world: World): void {
