@@ -2,7 +2,7 @@ import { STEP } from './core/constants';
 import { createWorld, step } from './core/sim';
 import type { GameEvent, World } from './core/types';
 import { isExhausted } from './player/player';
-import { reportRun } from './ui/bridge';
+import { exposeDiagnostics, reportRun } from './ui/bridge';
 import { Effects } from './ui/effects';
 import { drawHud, drawTouchControls } from './ui/hud';
 import { Controls } from './ui/input';
@@ -47,8 +47,7 @@ let last = performance.now();
 let carry = 0;
 const diag = { frames: 0, steps: 0, screen: screen as Screen, score: 0, canvasWidth: 0, canvasHeight: 0 };
 
-// Read-only numbers for the browser test in the gate.
-Object.defineProperty(window, '__intern', { value: diag, writable: false });
+exposeDiagnostics(diag);
 
 function newSeed(): number {
   return Math.floor(Math.random() * 0x7fffffff);

@@ -1,0 +1,300 @@
+name: gate
+
+# pull_request_target runs this file from main. A branch can't edit its own gate, because a change
+# to this file in a shift only takes effect after it has already passed the gate. It can't pass:
+# diff rules fail anything outside src/, tests/ and GAME.md.
+#
+# Untrusted code runs only in the build and unit jobs, which hold no secrets and a read-only token.
+# Secrets appear only in jobs that handle the built files as data and never run them.
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+env:
+  PAGES_PROJECT: agent-intern-play
+  GAME_URL: https://agent-intern-play.pages.dev
+  SITE_URL: https://agent-intern.pages.dev
+  PR_NUMBER: ${{ github.event.pull_request.number }}
+  HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+  HEAD_REF: ${{ github.head_ref }}
+
+jobs:
+  rules:
+    name: diff rules and secret scan
+    if: ${{ startsWith(github.head_ref, 'shift/') && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      shift: ${{ steps.identify.outputs.shift }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - id: identify
+        name: Read the shift number from the branch
+        run: |
+          [[ "$HEAD_REF" =~ ^shift/[0-9]+$ ]] || { echo "not a shift branch"; exit 1; }
+          echo "shift=${HEAD_REF#shift/}" >> "$GITHUB_OUTPUT"
+      - name: Fetch the branch as data
+        run: git fetch --no-tags origin "refs/pull/$PR_NUMBER/head:refs/pr/head"
+      - name: Check the rules from main
+        run: |
+          git merge-base --is-ancestor "$(git rev-parse HEAD)" "$HEAD_SHA" || {
+            echo '{"rules":["the branch is out of date with main"],"secrets":[]}' > report.json
+            exit 1
+          }
+          node gate/diff-rules.mjs --repo . --base "$(git rev-parse HEAD)" --head "$HEAD_SHA" --out report.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: rules
+          path: report.json
+
+  build:
+    name: build
+    needs: rules
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: Lay the shift's files over main
+        run: |
+          git fetch --no-tags origin "refs/pull/$PR_NUMBER/head:refs/pr/head"
+          rm -rf src tests GAME.md
+          git checkout "$HEAD_SHA" -- src tests GAME.md
+      - run: npm ci --ignore-scripts
+      - id: version
+        name: Set the version from the shift number
+        env:
+          SHIFT: ${{ needs.rules.outputs.shift }}
+        run: echo "version=0.1.$SHIFT" >> "$GITHUB_OUTPUT"
+      - name: Build
+        env:
+          GAME_VERSION: ${{ steps.version.outputs.version }}
+          SHIFT: ${{ needs.rules.outputs.shift }}
+          GAME_COMMIT: ${{ github.event.pull_request.head.sha }}
+        run: |
+          GAME_TASK="$(curl -fsS "$SITE_URL/api/shifts/$SHIFT" | jq -r '.shift.task')"
+          export GAME_TASK
+          npm run build
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist
+          include-hidden-files: true
+
+  unit:
+    name: unit tests
+    needs: rules
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: Lay the shift's files over main
+        run: |
+          git fetch --no-tags origin "refs/pull/$PR_NUMBER/head:refs/pr/head"
+          rm -rf src tests GAME.md
+          git checkout "$HEAD_SHA" -- src tests GAME.md
+      - run: npm ci --ignore-scripts
+      - run: npx tsc --noEmit
+      - run: npx vitest run
+
+  browser:
+    name: browser test
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: shift-dist
+      - name: Scan the build
+        run: node gate/artifact-scan.mjs shift-dist
+      - name: Take the before picture from main
+        run: |
+          npm run build
+          node gate/browser-gate.mjs dist --seconds 6 --out screens --name before || true
+      - name: Play 60 seconds on desktop and phone sizes
+        run: node gate/browser-gate.mjs shift-dist --seconds 60 --out screens --name after
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: screens
+          path: screens
+
+  deploy:
+    name: deploy
+    needs: [rules, build, unit, browser]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    permissions: {}
+    outputs:
+      previous: ${{ steps.previous.outputs.id }}
+    steps:
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: shift-dist
+          github-token: ${{ github.token }}
+          run-id: ${{ github.run_id }}
+      - id: previous
+        name: Remember the last good deployment
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          id="$(curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PAGES_PROJECT/deployments?env=production&per_page=1" \
+            | jq -r '.result[0].id')"
+          [ -n "$id" ] && [ "$id" != "null" ] || { echo "no previous deployment to fall back on"; exit 1; }
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+      - name: Deploy the built files
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.156.0 pages deploy shift-dist --project-name "$PAGES_PROJECT" --branch main --commit-dirty=true
+
+  verify:
+    name: live check
+    needs: [build, deploy]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - name: Play the live game
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: node gate/live-check.mjs "$GAME_URL" "$VERSION"
+
+  rollback:
+    name: roll back
+    needs: [deploy, verify]
+    if: ${{ always() && needs.deploy.result == 'success' && needs.verify.result != 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Restore the last good deployment
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PREVIOUS: ${{ needs.deploy.outputs.previous }}
+        run: |
+          curl -fsS -X POST -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PAGES_PROJECT/deployments/$PREVIOUS/rollback" \
+            | jq -e '.success == true'
+
+  merge:
+    name: merge
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      commit: ${{ steps.merge.outputs.commit }}
+    steps:
+      - id: merge
+        name: Merge what passed in production
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr merge "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --squash --match-head-commit "$HEAD_SHA"
+          echo "commit=$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json mergeCommit --jq .mergeCommit.oid)" >> "$GITHUB_OUTPUT"
+
+  report:
+    name: tell the site
+    needs: [rules, build, unit, browser, deploy, verify, rollback, merge]
+    if: ${{ always() && needs.rules.outputs.shift != '' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          path: artifacts
+        continue-on-error: true
+      - id: report
+        name: Post the results
+        env:
+          GATE_TOKEN: ${{ secrets.GATE_TOKEN }}
+          SHIFT: ${{ needs.rules.outputs.shift }}
+          VERSION: ${{ needs.build.outputs.version }}
+          COMMIT: ${{ needs.merge.outputs.commit }}
+          RESULTS: ${{ toJSON(needs) }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node gate/report.mjs
+      - name: Close the pull request if the shift is over
+        if: ${{ steps.report.outputs.close == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr close "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --comment "The gate closed this shift."
