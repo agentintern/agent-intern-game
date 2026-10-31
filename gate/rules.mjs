@@ -43,6 +43,7 @@ const CONTENT_RULES = [
   ['HTML injection', /\.innerHTML\b|\.outerHTML\b|insertAdjacentHTML|document\.write|\.srcdoc\b|createContextualFragment|DOMParser/],
   ['a new element that loads things', /createElement\s*\(\s*['"`](script|iframe|object|embed|link|img|video|audio|source|form|a)\b/i],
   ['navigation', /\blocation\s*[.=]|window\.open\b|\bhistory\.(push|replace)State\b/],
+  ['reading the page address', /\bdocument\s*\.\s*(URL|documentURI|baseURI|referrer)\b/],
   ['storage or cookies', /\b(localStorage|sessionStorage|indexedDB|cookieStore)\b|document\.cookie|\bcaches\b/],
   ['a wallet call', /\b(solana|phantom|solflare|backpack|ethereum|metamask|xnft|signMessage|signTransaction|signAllTransactions|sendTransaction|connectWallet|wallet)\b/i],
   ['device access', /\b(geolocation|mediaDevices|getUserMedia|clipboard|credentials|bluetooth|serial|usb|hid)\b/],

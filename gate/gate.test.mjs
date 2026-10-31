@@ -108,6 +108,8 @@ const ATTACKS = [
   ['innerHTML', src(`document.body.innerHTML = 'x';`), /HTML injection/],
   ['adding a script element', src(`document.createElement('script');`), /new element/],
   ['leaving the page', src(`location.href = '/x';`), /navigation/],
+  ['reading where it is embedded', src(`const from = document.referrer;`), /page address/],
+  ['reading its own address', src(`const here = document . URL;`), /page address/],
   // File tricks.
   ['a symlink', (root) => { symlinkSync('/etc/passwd', join(root, 'src/link.ts')); }, /symbolic link/],
   ['an executable file', (root) => { write('src/run.ts', 'export {};\n')(root); chmodSync(join(root, 'src/run.ts'), 0o755); }, /executable/],
