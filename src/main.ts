@@ -9,7 +9,7 @@ import { drawHud, drawTouchControls } from './ui/hud';
 import { listenToPage, type HallEntry } from './ui/inbox';
 import { Controls } from './ui/input';
 import { paintOffice } from './ui/officeArt';
-import { COFFEE, HIGHLIGHT, MINT, SKY, STAMP, VIOLET, WHITE } from './ui/palette';
+import { COFFEE, HIGHLIGHT, MINT, PAPER_DIM, SKY, STAMP, VIOLET, WHITE } from './ui/palette';
 import { followCamera, renderWorld, type Camera, type View } from './ui/render';
 import { drawEnding, drawHall, drawPaused, drawReview, drawTitle, menuRowAt, reviewMenuY, titleMenuY } from './ui/screens';
 import { Sound } from './ui/sound';
@@ -196,6 +196,13 @@ function handle(event: GameEvent): void {
         MINT,
       );
       sound.power();
+      break;
+    case 'printer-jam':
+      fx.popup(event.x, event.y - 10, 'JAMMED', STAMP);
+      fx.burst(event.x, event.y, PAPER_DIM, 10, 40);
+      sound.jam();
+      break;
+    case 'printer-clear':
       break;
     case 'beat':
       fx.banner = event.text;

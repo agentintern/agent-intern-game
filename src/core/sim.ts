@@ -5,6 +5,7 @@ import { createBoss, stepBoss } from '../enemies/boss';
 import { stepMeetings } from '../enemies/meetings';
 import { stepCoffee } from '../items/coffee';
 import { stepPowerups } from '../items/powerups';
+import { createPrinters, stepPrinters } from '../items/printers';
 import { spawnTask, stepTasks } from '../items/tasks';
 import { buildOffice } from '../levels/office';
 import { createPlayer, isFired, stepPlayer } from '../player/player';
@@ -41,9 +42,11 @@ export function createWorld(seed: number): World {
     coffeeCooldowns: office.coffeeSpots.map(() => 0),
     meetings: [],
     powerups: [],
+    printers: [],
     stats: { tasks: 0, missed: 0, coffees: 0, nearMisses: 0, meetings: 0, bestCombo: 1 },
     events: [],
   };
+  world.printers = createPrinters(world);
   spawnTask(world);
   spawnTask(world);
   return world;
@@ -67,6 +70,7 @@ export function step(world: World, input: Input): void {
   stepTasks(world);
   stepCoffee(world);
   stepPowerups(world);
+  stepPrinters(world);
   stepMeetings(world);
   stepBoss(world);
 

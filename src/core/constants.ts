@@ -42,6 +42,10 @@ export const POWER_SECONDS = 7;
 export const STAPLER_FREEZE = 3;
 export const STAPLER_RADIUS = 64;
 
+export const PRINTER_JAM_MIN = 10;
+export const PRINTER_JAM_MAX = 20;
+export const PRINTER_JAM_SECONDS = 3.5;
+
 export const MEETING_RADIUS = 7;
 export const MEETING_STUN = 2;
 export const BOSS_STUN = 1.6;

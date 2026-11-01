@@ -18,6 +18,7 @@ clock, 09:00 to 17:00.
 | **5 o'clock rush** | The last 22 seconds: tasks come faster and pay ×1.5. |
 | **Calls and projects** | A call takes a moment but lasts 6 seconds. A project takes 2.2 seconds of standing still and moves your combo two steps. |
 | **Power-ups** | One appears every 17 seconds. Headphones walk you through meetings. An auto-reply hides you from the boss and ends a chase. Both last 7 seconds. A stapler freezes every meeting near where you grab it in place for 3 seconds. None of them pay. |
+| **Printers** | Each one jams now and then, every 10-20 seconds, and blocks the aisle tile next to it for 3.5 seconds. A jam waits for the aisle to be clear before it starts, so it can't trap you. It doesn't pay. |
 | **The day** | 12:00 is lunch: fewer tasks and meetings, half the energy drain. 14:30 is all hands: two more meetings. Then the rush. |
 | **17:00** | Clocking out gets its own moment, and being fired gets a different one. The clock is stopped for both. |
 | **First run** | Short prompts appear as you walk to a task, finish it, grab coffee and dash. Each ends when you do the thing or after a few seconds. |
