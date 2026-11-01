@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { PLAYER_SPEED, STEP, TILE } from '../src/core/constants';
 import { createWorld, step } from '../src/core/sim';
+import type { PowerKind, TaskKind, World } from '../src/core/types';
 import { buildOffice, COLS, ROWS } from '../src/levels/office';
 import { drawBossFigure, drawInvite, drawRobot } from '../src/ui/actors';
 import { keysToScreen, screenDirToWorld, screenToWorld, viewFor, worldToScreen } from '../src/ui/iso';
+import { drawJam, itemArt, ITEM_KINDS } from '../src/ui/items';
 import { ART, type Place } from '../src/ui/props';
+import { drawOrder, thingsIn, type Thing } from '../src/ui/stage';
 
 // A drawing surface that counts what lands on it, so art can run with no browser.
 function surface(): { ctx: CanvasRenderingContext2D; marks: () => number } {
@@ -104,6 +107,18 @@ describe('the art', () => {
     }
   });
 
+  it('has art that paints for every pickup', () => {
+    const powers: PowerKind[] = ['headphones', 'auto-reply', 'stapler'];
+    const tasks: TaskKind[] = ['email', 'sheet', 'report', 'urgent', 'call', 'project'];
+    for (const kind of [...powers, ...tasks, 'coffee' as const]) {
+      expect(ITEM_KINDS).toContain(kind);
+      const { ctx, marks } = surface();
+      itemArt(kind).draw(ctx);
+      expect(marks(), kind).toBeGreaterThan(0);
+      expect(itemArt(kind).tag.length).toBeGreaterThan(0);
+    }
+  });
+
   it('draws every person in all four views, and a stapled meeting apart from a free one', () => {
     for (const view of ['se', 'sw', 'nw', 'ne'] as const) {
       for (const draw of [drawRobot, drawBossFigure]) {
@@ -117,5 +132,58 @@ describe('the art', () => {
     drawInvite(free.ctx, 0, false);
     drawInvite(stapled.ctx, 0, true);
     expect(stapled.marks()).toBeGreaterThan(free.marks());
+  });
+});
+
+describe('what the frame holds', () => {
+  const isJam = (t: Thing): boolean => t.kind === 'jam';
+
+  it('shows a jam only while the printer is jammed', () => {
+    const world = createWorld(11);
+    const { ctx, marks } = surface();
+    drawJam(ctx, true);
+    expect(marks()).toBeGreaterThan(10);
+    let jammed = 0;
+    for (let i = 0; i < 90 * 60 && world.phase === 'playing'; i++) {
+      world.events.length = 0;
+      step(world, { moveX: 0, moveY: 0, dash: false });
+      const open = world.printers.filter((p) => p.jamT > 0).length;
+      expect(thingsIn(world).filter(isJam)).toHaveLength(open);
+      jammed += open;
+    }
+    expect(jammed).toBeGreaterThan(0);
+  });
+
+  function around(tx: number, ty: number, dx: number, dy: number): { order: Thing[]; world: World } {
+    const world = createWorld(3);
+    world.tasks.length = 0;
+    world.meetings.length = 0;
+    Object.assign(world.boss, { x: 2 * TILE, y: 2 * TILE });
+    Object.assign(world.player, { x: tx * TILE + dx, y: ty * TILE + dy });
+    return { order: drawOrder(world, world.office), world };
+  }
+
+  it('sorts a character behind furniture it stands behind, and in front of furniture it has passed', () => {
+    const office = buildOffice();
+    const desk = { tx: 17, ty: 9 };
+    expect(office.tiles[desk.ty]?.[desk.tx]).toBe('D');
+    const tileAt = (order: Thing[]): number => order.findIndex((t) => t.kind === 'tile' && t.tx === desk.tx && t.ty === desk.ty);
+    const playerAt = (order: Thing[]): number => order.findIndex((t) => t.kind === 'player');
+
+    const behind = around(desk.tx, desk.ty, 8, -5);
+    expect(tileAt(behind.order)).toBeGreaterThan(playerAt(behind.order));
+
+    const west = around(desk.tx, desk.ty, -5, 8);
+    expect(tileAt(west.order)).toBeGreaterThan(playerAt(west.order));
+
+    expect(tileAt(around(desk.tx, desk.ty, 8, TILE + 5).order)).toBe(-1);
+    expect(tileAt(around(desk.tx + 1, desk.ty, TILE + 5, 8).order)).toBe(-1);
+  });
+
+  it('never lists a tile twice, and shows what matters through tall furniture', () => {
+    const { order } = around(16, 9, 8, -5);
+    const tiles = order.filter((t): t is Thing & { kind: 'tile' } => t.kind === 'tile');
+    expect(new Set(tiles.map((t) => t.tx * 100 + t.ty)).size).toBe(tiles.length);
+    expect(tiles.some((t) => t.see)).toBe(true);
   });
 });
