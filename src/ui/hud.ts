@@ -6,7 +6,7 @@ import type { Effects } from './effects';
 import { drawText, drawTextCentered, textWidth } from './font';
 import { HIGHLIGHT, INK, MINT, PAPER, PAPER_DIM, SKY, STAMP, VIOLET, WHITE } from './palette';
 import type { Stick } from './input';
-import type { View } from './render';
+import type { View } from './stage';
 
 const BAR_H = 15;
 

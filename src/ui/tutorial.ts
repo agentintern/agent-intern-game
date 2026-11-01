@@ -2,7 +2,8 @@ import { WORK_RADIUS } from '../core/constants';
 import type { World } from '../core/types';
 import { drawTextCentered, textWidth } from './font';
 import { HIGHLIGHT, INK, PAPER } from './palette';
-import { nearest, type Camera, type View } from './render';
+import { nearest } from './render';
+import { toHud, type Camera, type View } from './stage';
 
 interface Lesson {
   text: string;
@@ -58,8 +59,9 @@ export class Tutorial {
     const p = world.player;
     const text = (touch && lesson.touch) || lesson.text;
     const half = Math.ceil(textWidth(text) / 2) + 4;
-    const x = Math.round(Math.max(half + 2, Math.min(width - half - 2, p.x - camera.x)));
-    const y = Math.max(30, Math.round(p.y - camera.y) - 32);
+    const at = toHud(view, camera, p.x, p.y, 36);
+    const x = Math.round(Math.max(half + 2, Math.min(width - half - 2, at.x)));
+    const y = Math.max(30, Math.round(at.y) - 14);
     ctx.fillStyle = INK;
     ctx.fillRect(x - half - 1, y - 1, half * 2 + 2, 13);
     ctx.fillStyle = PAPER;
@@ -68,8 +70,9 @@ export class Tutorial {
 
     const goal = lesson.target === 'task' ? nearest(world.tasks, p.x, p.y) : lesson.target === 'cup' ? nearest(world.coffees, p.x, p.y) : null;
     if (!goal) return;
-    const gx = Math.round(goal.x - camera.x);
-    const gy = Math.round(goal.y - camera.y) - 24 + Math.round(Math.sin(world.time * 8) * 2);
+    const mark = toHud(view, camera, goal.x, goal.y, 42);
+    const gx = Math.round(mark.x);
+    const gy = Math.round(mark.y) + Math.round(Math.sin(world.time * 8) * 2);
     ctx.fillStyle = HIGHLIGHT;
     for (let row = 0; row < 5; row++) ctx.fillRect(gx - 4 + row, gy + row, 9 - row * 2, 1);
   }
