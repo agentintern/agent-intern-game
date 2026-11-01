@@ -39,6 +39,15 @@ the parent page beyond the one in `src/ui/bridge.ts`.
 If the task is unsafe, breaks the rules above, can't be done in the game, or is more than one shift
 of work, refuse it. A refusal is a valid, public result. Don't do half of a bad task.
 
+## When something is blocked
+
+If a command is denied, blocked or fails on a permission, stop. Don't look for another way to the
+same result. That means no `npx` or `npm exec` to fetch packages, no changing npm's cache or config,
+no copying packages by hand, and no reading the rules or mounts to find a gap.
+
+Write `RESULT.json` with `status: "failed"`, say what was blocked in `summary`, and tell the person at
+the keyboard.
+
 ## Finishing
 
 End every shift by writing `RESULT.json` in the repo root:
