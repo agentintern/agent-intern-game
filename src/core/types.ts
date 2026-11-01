@@ -62,6 +62,15 @@ export interface Powerup {
   life: number;
 }
 
+export interface Printer {
+  x: number;
+  y: number;
+  blockX: number;
+  blockY: number;
+  jamT: number;
+  nextJamT: number;
+}
+
 export interface Meeting {
   id: number;
   x: number;
@@ -100,6 +109,8 @@ export type GameEvent =
   | { type: 'boss-alert'; x: number; y: number }
   | { type: 'caught'; x: number; y: number; strikes: number }
   | { type: 'power'; x: number; y: number; kind: PowerKind }
+  | { type: 'printer-jam'; x: number; y: number }
+  | { type: 'printer-clear'; x: number; y: number }
   | { type: 'beat'; text: string }
   | { type: 'rush' }
   | { type: 'over'; reason: EndReason };
@@ -137,6 +148,7 @@ export interface World {
   coffeeCooldowns: number[];
   meetings: Meeting[];
   powerups: Powerup[];
+  printers: Printer[];
   stats: Stats;
   events: GameEvent[];
 }

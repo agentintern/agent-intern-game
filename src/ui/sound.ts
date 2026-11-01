@@ -106,6 +106,12 @@ export class Sound {
     this.tone(1175, 0.14, 'square', 0.3, now + 0.1);
   }
   caught(): void { this.tone(160, 0.5, 'sawtooth', 0.45, 0, 50); }
+  jam(): void {
+    const now = this.ctx?.currentTime ?? 0;
+    this.tone(140, 0.08, 'square', 0.28, 0, 90);
+    this.tone(110, 0.1, 'square', 0.26, now + 0.09, 70);
+    this.tone(90, 0.14, 'square', 0.24, now + 0.18, 50);
+  }
   over(won: boolean): void {
     const now = this.ctx?.currentTime ?? 0;
     const notes = won ? [392, 523, 659, 784] : [392, 330, 262, 196];

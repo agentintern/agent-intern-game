@@ -1,5 +1,5 @@
 import { BOSS_SIGHT_HALF_ANGLE, BOSS_SIGHT_RANGE, RUN_SECONDS, TILE } from '../core/constants';
-import type { Powerup, Task, World } from '../core/types';
+import type { Powerup, Printer, Task, World } from '../core/types';
 import { COLS, hasLineOfSight, ROWS } from '../levels/office';
 import type { Effects } from './effects';
 import { drawTextCentered, textWidth, wrapText } from './font';
@@ -91,6 +91,26 @@ function drawPowerup(ctx: CanvasRenderingContext2D, view: View, item: Powerup, t
   ctx.fill();
   if (item.life < 3 && Math.floor(time * 7) % 2 === 0) return;
   ctx.drawImage(sprite, Math.round(item.x - 5), Math.round(item.y - 4 + Math.sin(time * 4)));
+}
+
+// Jam papers spill into the aisle tile, with a hazard tape X, while a printer is jammed.
+function drawPrinterJam(ctx: CanvasRenderingContext2D, printer: Printer, time: number): void {
+  const x = printer.blockX * TILE;
+  const y = printer.blockY * TILE;
+  ctx.fillStyle = 'rgba(217,64,47,0.22)';
+  ctx.fillRect(x, y, TILE, TILE);
+  ctx.strokeStyle = STAMP;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x + 2, y + 2);
+  ctx.lineTo(x + TILE - 2, y + TILE - 2);
+  ctx.moveTo(x + TILE - 2, y + 2);
+  ctx.lineTo(x + 2, y + TILE - 2);
+  ctx.stroke();
+  if (Math.floor(time * 6) % 2 === 0) {
+    ctx.fillStyle = PAPER;
+    ctx.fillRect(x + TILE / 2 - 3, y + 4, 6, 4);
+  }
 }
 
 function drawBossCone(ctx: CanvasRenderingContext2D, world: World): void {
@@ -321,6 +341,7 @@ export function renderWorld(view: View, camera: Camera, world: World, fx: Effect
   }
   for (const task of world.tasks) drawTask(ctx, view, task, world.time);
   for (const item of world.powerups) drawPowerup(ctx, view, item, world.time);
+  for (const printer of world.printers) if (printer.jamT > 0) drawPrinterJam(ctx, printer, world.time);
   drawBossCone(ctx, world);
 
   // Sorted by y with no list to build: meetings behind, then the two people, then meetings in front.

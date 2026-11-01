@@ -46,6 +46,13 @@ export interface Point {
   y: number;
 }
 
+export interface PrinterSpot {
+  x: number;
+  y: number;
+  blockX: number;
+  blockY: number;
+}
+
 export interface Office {
   tiles: string[];
   solid: Uint8Array;
@@ -54,6 +61,7 @@ export interface Office {
   bossStart: Point;
   taskSpots: Point[];
   coffeeSpots: Point[];
+  printers: PrinterSpot[];
   bossRoute: Point[];
 }
 
@@ -74,6 +82,7 @@ export function buildOffice(): Office {
   let playerStart: Point | null = null;
   let bossStart: Point | null = null;
   const coffeeMachines: Point[] = [];
+  const printerMachines: Point[] = [];
 
   for (let ty = 0; ty < ROWS; ty++) {
     for (let tx = 0; tx < COLS; tx++) {
@@ -83,6 +92,7 @@ export function buildOffice(): Office {
       if (c === 'p') playerStart = tileCenter(tx, ty);
       if (c === 'b') bossStart = tileCenter(tx, ty);
       if (c === 'C') coffeeMachines.push({ x: tx, y: ty });
+      if (c === 'M') printerMachines.push({ x: tx, y: ty });
     }
   }
   if (!playerStart || !bossStart) throw new Error('the map needs a player and a boss start');
@@ -107,6 +117,17 @@ export function buildOffice(): Office {
     throw new Error('a coffee machine is walled in');
   });
 
+  // The aisle tile a printer jams into is the open floor right next to it.
+  const printers: PrinterSpot[] = printerMachines.map((m) => {
+    for (const [dx, dy] of [[0, 1], [1, 0], [-1, 0], [0, -1]] as const) {
+      if (isFloor(m.x + dx, m.y + dy)) {
+        const center = tileCenter(m.x, m.y);
+        return { x: center.x, y: center.y, blockX: m.x + dx, blockY: m.y + dy };
+      }
+    }
+    throw new Error('a printer is walled in');
+  });
+
   const bossRoute: Point[] = [
     tileCenter(36, 5),
     tileCenter(36, 8),
@@ -125,7 +146,7 @@ export function buildOffice(): Office {
     tileCenter(29, 5),
   ];
 
-  return { tiles: MAP, solid, sight, playerStart, bossStart, taskSpots, coffeeSpots, bossRoute };
+  return { tiles: MAP, solid, sight, playerStart, bossStart, taskSpots, coffeeSpots, printers, bossRoute };
 }
 
 export function isSolidAt(office: Office, x: number, y: number): boolean {
