@@ -8,29 +8,35 @@ import { Effects } from './ui/effects';
 import { drawHud, drawTouchControls } from './ui/hud';
 import { listenToPage, type HallEntry } from './ui/inbox';
 import { Controls } from './ui/input';
-import { paintOffice } from './ui/officeArt';
 import { COFFEE, HIGHLIGHT, MINT, PAPER_DIM, SKY, STAMP, VIOLET, WHITE } from './ui/palette';
-import { followCamera, renderWorld, type Camera, type View } from './ui/render';
+import { renderWorld } from './ui/marks';
+import { followCamera, newCamera, prepare, tourCamera, type View } from './ui/stage';
 import { drawEnding, drawHall, drawPaused, drawReview, drawTitle, menuRowAt, reviewMenuY, titleMenuY } from './ui/screens';
 import { Sound } from './ui/sound';
-import { buildSprites } from './ui/sprites';
 import { Tutorial } from './ui/tutorial';
 import { SITE_ORIGIN } from './version';
 
 type Screen = 'title' | 'hall' | 'playing' | 'paused' | 'ending' | 'review';
 
-// The target for the short side of the screen, in game pixels. Scale is always a whole number
-// so the pixels stay square. Portrait zooms in further, since a phone is held close.
+// The target for the short side of the screen, in HUD pixels. Scale is always a whole number of
+// canvas pixels, so the bitmap font stays square. Portrait is larger, since a phone is held close.
 const SHORT_SIDE = 280;
 const SHORT_SIDE_PORTRAIT = 228;
+// How much office fits across the short side of the screen, in iso pixels. This sets how far ahead a phone can see.
+const VIEW_SHORT = 320;
+const MAX_ZOOM_CSS = 2.2;
+// The world draws at device resolution up to these caps. Past them nobody can see the difference.
+const MAX_ZOOM = 3;
+const MAX_PIXELS = [1_900_000, 1_900_000, 520_000];
+const PACE_LIMIT = 1 / 40;
+const PACE_WINDOW = 3;
 const REVIEW_ROWS = ['ANOTHER DAY', 'BACK TO THE LOBBY'];
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const context = canvas.getContext('2d', { alpha: false });
 if (!context) throw new Error('canvas 2d is not available');
-context.imageSmoothingEnabled = false;
+canvas.style.imageRendering = 'auto';
 
-const sprites = buildSprites();
 const controls = new Controls(canvas);
 const sound = new Sound();
 const fx = new Effects();
@@ -41,10 +47,18 @@ const view: View = {
   ctx: context,
   width: 480,
   height: 300,
-  sprites,
-  map: paintOffice(world.office),
+  unit: 1,
+  zoom: 2,
+  canvasW: 480,
+  canvasH: 300,
+  quality: 0,
+  scene: null,
+  office: world.office,
+  sprites: new Map(),
+  faces: { player: 'sw', boss: 'sw' },
+  seen: { x: 0, y: 0 },
 };
-const camera: Camera = { x: 0, y: 0 };
+const camera = newCamera();
 let scale = 1;
 let screen: Screen = 'title';
 let clock = 0;
@@ -56,6 +70,9 @@ let runDay: number | null = null;
 let runLabel = '';
 let hall: HallEntry[] = [];
 let menu = 0;
+let slowFrames = 0;
+let paceFrames = 0;
+let paceTime = 0;
 let last = performance.now();
 let carry = 0;
 const diag = { frames: 0, steps: 0, screen: screen as Screen, score: 0, canvasWidth: 0, canvasHeight: 0 };
@@ -74,21 +91,28 @@ function resize(): void {
   const dpr = window.devicePixelRatio || 1;
   const cssW = window.innerWidth;
   const cssH = window.innerHeight;
-  const deviceW = cssW * dpr;
-  const deviceH = cssH * dpr;
-  const shortSide = deviceH > deviceW ? SHORT_SIDE_PORTRAIT : SHORT_SIDE;
-  const deviceScale = Math.max(1, Math.floor(Math.min(deviceW, deviceH) / shortSide));
-  view.width = Math.ceil(deviceW / deviceScale);
-  view.height = Math.ceil(deviceH / deviceScale);
-  canvas.width = view.width;
-  canvas.height = view.height;
-  scale = deviceScale / dpr;
-  canvas.style.width = `${view.width * scale}px`;
-  canvas.style.height = `${view.height * scale}px`;
-  context!.imageSmoothingEnabled = false;
+  const zoomCss = Math.min(MAX_ZOOM_CSS, Math.max(1, Math.min(cssW, cssH) / VIEW_SHORT));
+  const limit = MAX_PIXELS[view.quality] as number;
+  const density = Math.min(dpr, MAX_ZOOM / zoomCss, Math.sqrt(limit / (cssW * cssH)));
+  canvas.width = Math.round(cssW * density);
+  canvas.height = Math.round(cssH * density);
+  canvas.style.width = `${cssW}px`;
+  canvas.style.height = `${cssH}px`;
+  view.canvasW = canvas.width;
+  view.canvasH = canvas.height;
+  // A small change keeps the old size, so a phone's address bar sliding away doesn't repaint the building.
+  const wanted = Math.round(zoomCss * density * 10) / 10;
+  const had = view.scene?.zoom;
+  view.zoom = had && Math.abs(had - wanted) / wanted < 0.12 ? had : wanted;
+  const shortSide = canvas.height > canvas.width ? SHORT_SIDE_PORTRAIT : SHORT_SIDE;
+  view.unit = Math.max(1, Math.floor(Math.min(canvas.width, canvas.height) / shortSide));
+  view.width = Math.ceil(canvas.width / view.unit);
+  view.height = Math.ceil(canvas.height / view.unit);
+  scale = cssW / (canvas.width / view.unit);
+  prepare(view, view.zoom);
   followCamera(view, camera, world.player.x, world.player.y, true);
-  diag.canvasWidth = view.width;
-  diag.canvasHeight = view.height;
+  diag.canvasWidth = canvas.width;
+  diag.canvasHeight = canvas.height;
 }
 
 function setScreen(next: Screen): void {
@@ -100,6 +124,7 @@ function startRun(day: number | null): void {
   runDay = day;
   runLabel = day === null ? '' : `DAILY #${day}`;
   world = createWorld(day === null ? newSeed() : dailySeed(day));
+  view.office = world.office;
   fx.clear();
   followCamera(view, camera, world.player.x, world.player.y, true);
   sound.startMusic();
@@ -264,7 +289,8 @@ function update(dt: number): void {
   }
   if (screen === 'playing') tutorial.update(world, dt);
   if (screen === 'ending' && clock - endAt > ending.seconds) toMenu('review');
-  followCamera(view, camera, world.player.x, world.player.y);
+  if (screen === 'title') tourCamera(camera, clock);
+  else followCamera(view, camera, world.player.x, world.player.y);
   fx.update(dt);
   sound.chased = screen === 'playing' && world.boss.state === 'chase';
   sound.update();
@@ -272,7 +298,8 @@ function update(dt: number): void {
 }
 
 function draw(): void {
-  renderWorld(view, camera, world, fx, screen !== 'title');
+  renderWorld(view, camera, world, fx, screen !== 'title', screen !== 'playing' || tutorial.active);
+  context!.setTransform(view.unit, 0, 0, view.unit, 0, 0);
   if (screen === 'title') {
     drawTitle(view, controls.usingTouch || navigator.maxTouchPoints > 0, clock, menuRows(), menu);
     return;
@@ -291,10 +318,26 @@ function draw(): void {
   if (screen === 'review') drawReview(view, world, runLabel, REVIEW_ROWS, menu, clock - reviewAt);
 }
 
+// Under 40 fps for 3 seconds, most of the frames being slow: first the lights go, then sharpness. Nothing you need
+// to play is in either. The median, not the mean, because one long stall isn't a slow machine.
+function watchPace(seconds: number): void {
+  paceTime += seconds;
+  paceFrames++;
+  if (seconds > PACE_LIMIT) slowFrames++;
+  if (paceTime < PACE_WINDOW) return;
+  const struggling = slowFrames > paceFrames / 2;
+  paceTime = paceFrames = slowFrames = 0;
+  if (!struggling || view.quality >= 2) return;
+  view.quality++;
+  if (view.quality === 2) resize();
+}
+
 function frame(now: number): void {
-  const dt = Math.min(0.1, (now - last) / 1000);
+  const elapsed = (now - last) / 1000;
+  const dt = Math.min(0.1, elapsed);
   last = now;
   clock += dt;
+  watchPace(elapsed);
   update(dt);
   draw();
   diag.frames++;

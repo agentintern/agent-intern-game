@@ -1,4 +1,5 @@
 import type { Input } from '../core/types';
+import { keysToScreen, screenDirToWorld } from './iso';
 
 export interface Stick {
   active: boolean;
@@ -94,18 +95,20 @@ export class Controls {
     if (this.keys.has('ArrowRight') || this.keys.has('KeyD')) moveX += 1;
     if (this.keys.has('ArrowUp') || this.keys.has('KeyW')) moveY -= 1;
     if (this.keys.has('ArrowDown') || this.keys.has('KeyS')) moveY += 1;
+    let push = keysToScreen(moveX, moveY);
     if (this.stick.active) {
       const dx = this.stick.x - this.stick.originX;
       const dy = this.stick.y - this.stick.originY;
       const len = Math.hypot(dx, dy);
       if (len > 7) {
         const pull = Math.min(1, len / STICK_RANGE);
-        moveX = (dx / len) * Math.max(0.55, pull);
-        moveY = (dy / len) * Math.max(0.55, pull);
+        push = { x: (dx / len) * Math.max(0.55, pull), y: (dy / len) * Math.max(0.55, pull) };
       }
     }
     const dash = this.dashQueued;
     this.dashQueued = false;
-    return { moveX, moveY, dash };
+    // The sim only ever sees world directions.
+    const world = screenDirToWorld(push.x, push.y);
+    return { moveX: world.x, moveY: world.y, dash };
   }
 }

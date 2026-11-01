@@ -3,9 +3,8 @@ import type { World } from '../core/types';
 import { GAME_TASK, GAME_VERSION } from '../version';
 import { drawText, drawTextCentered, GLYPH_H, wrapText } from './font';
 import type { HallEntry } from './inbox';
-import { HIGHLIGHT, INK, MINT, PAPER, PAPER_DIM, STAMP, VIOLET, WHITE } from './palette';
-import { WALK, type View } from './render';
-import type { Sprite } from './sprites';
+import { HIGHLIGHT, INK, MINT, PAPER, PAPER_DIM, STAMP, WHITE } from './palette';
+import { drawHero, type View } from './stage';
 
 const MENU_ROW = 22;
 const CARD_H = 181;
@@ -29,20 +28,15 @@ function drawMenu(view: View, menuY: number, rows: readonly string[], selected: 
   });
 }
 
-// The robot at any size, with its visor lit. `box` is the desk you clear out when fired.
-function drawMascot(view: View, frame: Sprite, cx: number, y: number, s: number, glow: number, box = false): void {
+// `box` is the desk you clear out when fired.
+function drawMascot(view: View, cx: number, feet: number, s: number, stride = -1, box = false): void {
   const { ctx } = view;
-  const x = Math.round(cx - (frame.width * s) / 2);
-  ctx.drawImage(frame, x, y, frame.width * s, frame.height * s);
-  ctx.globalAlpha = glow;
-  ctx.fillStyle = '#ff9a3d';
-  ctx.fillRect(x + 2 * s, y + 3 * s, 8 * s, 3 * s);
-  ctx.globalAlpha = 1;
+  drawHero(view, cx, feet, s, { view: stride < 0 ? 'sw' : 'se', stride });
   if (!box) return;
   ctx.fillStyle = '#a4744d';
-  ctx.fillRect(x + s, y + 9 * s, 10 * s, 4 * s);
+  ctx.fillRect(cx - 7 * s, feet - 11 * s, 14 * s, 6 * s);
   ctx.fillStyle = '#7d5639';
-  ctx.fillRect(x + s, y + 9 * s, 10 * s, s);
+  ctx.fillRect(cx - 7 * s, feet - 11 * s, 14 * s, s);
 }
 
 function veil(view: View, alpha: number): void {
@@ -52,7 +46,7 @@ function veil(view: View, alpha: number): void {
 
 export function drawTitle(view: View, touch: boolean, time: number, rows: readonly string[], selected: number): void {
   const { ctx, width, height } = view;
-  veil(view, 0.74);
+  veil(view, 0.52);
   const big = width >= 330 ? 3 : 2;
   const menuY = titleMenuY(view);
   const top = Math.max(10, menuY - 150);
@@ -61,9 +55,7 @@ export function drawTitle(view: View, touch: boolean, time: number, rows: readon
   drawTextCentered(ctx, 'AT THE OFFICE', width / 2 + big, top + 26 + big, STAMP, big);
   drawTextCentered(ctx, 'AT THE OFFICE', width / 2, top + 26, WHITE, big);
 
-  const size = menuY - top - 54 >= 78 ? 5 : 4;
-  const robot = view.sprites.internDown[0] as Sprite;
-  drawMascot(view, robot, width / 2, menuY - 5 - robot.height * size, size, 0.2 + 0.16 * Math.sin(time * 3));
+  drawMascot(view, width / 2, menuY - 7 + Math.round(Math.sin(time * 2) * 1.5), menuY - top - 54 >= 100 ? 2.5 : 2);
 
   drawMenu(view, menuY, rows, selected);
   const tip = touch ? 'TAP A SHIFT TO CLOCK IN' : 'UP AND DOWN TO CHOOSE. SPACE TO CLOCK IN.';
@@ -79,27 +71,30 @@ export function drawTitle(view: View, touch: boolean, time: number, rows: readon
 
 export function drawHall(view: View, bosses: readonly HallEntry[], time: number): void {
   const { ctx, width, height } = view;
-  veil(view, 0.8);
+  veil(view, 0.62);
   const x = 12;
   const y = 16;
   const w = width - 24;
   const h = height - 32;
-  ctx.fillStyle = '#7f889a';
+  ctx.fillStyle = '#aeb7c4';
   ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
-  ctx.fillStyle = WHITE;
+  ctx.fillStyle = INK;
   ctx.fillRect(x, y, w, h);
-  drawTextCentered(ctx, 'HALL OF BOSSES', width / 2, y + 8, VIOLET, width >= 200 ? 2 : 1);
-  drawTextCentered(ctx, 'SPACE OR TAP TO GO BACK', width / 2, y + h - 12, VIOLET);
+  drawTextCentered(ctx, 'HALL OF BOSSES', width / 2, y + 8, HIGHLIGHT, width >= 200 ? 2 : 1);
+  drawTextCentered(ctx, 'SPACE OR TAP TO GO BACK', width / 2, y + h - 12, PAPER_DIM);
 
   const chars = Math.floor((w - 16) / 6);
   const empty = 'NOTHING HAS SHIPPED YET. THE BOSS CALLS THIS A CLEAN SLATE.';
-  if (bosses.length === 0) wrapText(empty, chars).forEach((line, i) => drawTextCentered(ctx, line, width / 2, y + 44 + i * 11, INK));
+  if (bosses.length === 0) {
+    wrapText(empty, chars).forEach((line, i) => drawTextCentered(ctx, line, width / 2, y + 44 + i * 11, PAPER));
+    drawMascot(view, width / 2, y + h - 30, 2);
+  }
   const fit = Math.max(1, Math.floor((h - 46) / 32));
   // A long list scrolls by itself, so it needs no controls on a phone.
   const first = Math.floor(time / 2.5) % Math.max(1, bosses.length - fit + 1);
   bosses.slice(first, first + fit).forEach((entry, i) => {
     const rowY = y + 30 + i * 32;
-    wrapText(entry.task, chars).slice(0, 2).forEach((line, n) => drawText(ctx, line.slice(0, chars), x + 8, rowY + n * 9, INK));
+    wrapText(entry.task, chars).slice(0, 2).forEach((line, n) => drawText(ctx, line.slice(0, chars), x + 8, rowY + n * 9, PAPER));
     drawText(ctx, `BY ${entry.by}`.slice(0, chars), x + 8, rowY + 18, STAMP);
   });
 }
@@ -115,13 +110,12 @@ export function drawEnding(view: View, world: World, scene: EndingScene, elapsed
     const size = Math.max(3, 9 - Math.floor(elapsed * 40));
     drawTextCentered(ctx, scene.title, width / 2 + 2, y + 2, INK, size);
     drawTextCentered(ctx, scene.title, width / 2, y, STAMP, size);
-    drawMascot(view, view.sprites.internDown[0] as Sprite, width / 2, y + 50, 3, 0, true);
+    drawMascot(view, width / 2, y + 118, 2, -1, true);
   } else {
     veil(view, Math.min(0.72, elapsed * 0.6));
     drawTextCentered(ctx, '17:00', width / 2, y, HIGHLIGHT, 5);
     drawTextCentered(ctx, scene.title, width / 2, y + 42, WHITE, 2);
-    const walk = view.sprites.internRight[WALK[Math.floor(elapsed * 9) % 4] as number] as Sprite;
-    drawMascot(view, walk, -30 + (width + 60) * (elapsed / scene.seconds), y + 86, 3, 0);
+    drawMascot(view, -30 + (width + 60) * (elapsed / scene.seconds), y + 132, 1.5, (elapsed * 2) % 1);
   }
   lines.forEach((line, i) => drawTextCentered(ctx, line, width / 2, y + 62 + (fired ? 62 : 74) + i * 10, PAPER));
 }
@@ -178,7 +172,7 @@ export function drawReview(view: View, world: World, shift: string, choices: rea
     drawTextCentered(ctx, review.stamp, width / 2, stampY + 3, STAMP);
     const lines = wrapText(review.line, Math.floor((w - 12) / 6));
     lines.slice(0, 2).forEach((line, i) => drawTextCentered(ctx, line, width / 2, stampY + 18 + i * 9, INK));
-    drawMascot(view, view.sprites.internDown[0] as Sprite, x + 21, stampY - 14, 2, 0.25, world.endReason === 'fired');
+    drawMascot(view, x + 21, stampY + 34, 1, -1, world.endReason === 'fired');
   }
 
   if (elapsed > 0.9) drawMenu(view, reviewMenuY(view), choices, selected);

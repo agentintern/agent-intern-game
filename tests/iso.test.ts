@@ -6,6 +6,7 @@ import { buildOffice, COLS, ROWS } from '../src/levels/office';
 import { drawBossFigure, drawInvite, drawRobot } from '../src/ui/actors';
 import { keysToScreen, screenDirToWorld, screenToWorld, viewFor, worldToScreen } from '../src/ui/iso';
 import { drawJam, itemArt, ITEM_KINDS } from '../src/ui/items';
+import { stackMarker } from '../src/ui/marks';
 import { ART, type Place } from '../src/ui/props';
 import { drawOrder, thingsIn, type Thing } from '../src/ui/stage';
 
@@ -185,5 +186,17 @@ describe('what the frame holds', () => {
     const tiles = order.filter((t): t is Thing & { kind: 'tile' } => t.kind === 'tile');
     expect(new Set(tiles.map((t) => t.tx * 100 + t.ty)).size).toBe(tiles.length);
     expect(tiles.some((t) => t.see)).toBe(true);
+  });
+});
+
+describe('edge markers', () => {
+  it('stack without ever looping, even piled on the middle of the screen', () => {
+    const placed = [{ x: 200, y: 100 }];
+    for (const y of [100, 101, 99]) {
+      const at = stackMarker(placed, 200, y, 100);
+      placed.push({ x: 200, y: at });
+      expect(Number.isFinite(at)).toBe(true);
+    }
+    expect(new Set(placed.map((m) => m.y)).size).toBe(placed.length);
   });
 });

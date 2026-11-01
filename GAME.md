@@ -1,6 +1,6 @@
 # How the game works
 
-**Last Day at the Office.** You're a tired robot intern in a top-down office. Finish tasks, drink coffee,
+**Last Day at the Office.** You're a tired robot intern in an isometric night office. Finish tasks, drink coffee,
 dodge meetings, stay out of the boss's sight. A run is 90 seconds, which is one workday on the office
 clock, 09:00 to 17:00.
 
@@ -57,7 +57,7 @@ replays the same way. `ui` only reads the world and draws it.
 | `src/enemies/` | `boss.ts` (patrol, sight, chase) and `meetings.ts`. |
 | `src/levels/` | `office.ts`: the map as text, line of sight and path distances. |
 | `src/items/` | `tasks.ts`, `coffee.ts` and `powerups.ts`. |
-| `src/ui/` | Sprites as text, painted office art, jokes, renderer, HUD, screens, tutorial, input, sound, bridge, inbox. |
+| `src/ui/` | The isometric view: `iso.ts` (projection), `box.ts` (solid shapes), `rooms.ts` (floors), `props.ts` (furniture), `scene.ts` (the building, painted once), `actors.ts` (people), `items.ts` (pickups, jams), `stage.ts` (each frame), `marks.ts` (tags, markers). Plus HUD, screens, tutorial, input, sound, bridge, inbox. |
 | `src/main.ts` | The browser loop. Handles world events: particles, sound, screens. |
 | `tests/` | Runs with no browser. `bot.ts` is a simple player used to run whole games. |
 
@@ -70,8 +70,37 @@ effects and sound. To add a thing, add it to the sim, emit an event, then draw i
 - `src/ui/bridge.ts` sends one message to the embedding page when a run ends. That's the only thing
   that leaves the game. `src/ui/inbox.ts` is the only thing that comes in.
 - It runs in a sandboxed iframe with no storage, so nothing can persist between visits.
-- There are no asset files. Sprites are text in `sprites.ts`, the font is in `font.ts`, the office is
-  painted in `officeArt.ts`, and the sound is synthesized in `sound.ts`.
+- There are no asset files. Everything is drawn in code with Canvas 2D, the font is in `font.ts`, and the sound is
+  synthesized in `sound.ts`. A 3D library can't be used: it contains network calls, and the build scan fails them.
+
+## Adding something to the office
+
+`src/ui/iso.ts` is the only code that knows the projection. World x runs down and right on screen, y down and left, and
+z up. A tile is 16 by 16. `box(c, x, y, z, width, depth, height, color)` draws a lit solid, and you never touch the
+renderer. Depth order, contact shadows and showing a character through it all come from the map.
+
+**Furniture** is a function and one entry. A water cooler on map character `W`:
+
+```ts
+// src/ui/props.ts
+function drawCooler(c: Art, p: Place): void {
+  box(c, p.x + 3, p.y + 3, 0, 10, 10, 13, STEEL);
+  box(c, p.x + 4, p.y + 4, 13, 8, 8, 9, '#7fb8e8', { rim: 0.8 });
+}
+// In ART: height for depth order, foot for the shadow, spread for how wide it stands on screen.
+W: { height: 22, foot: 0.8, spread: 18, draw: drawCooler },
+```
+
+Then put `W` in the map in `src/levels/office.ts`, and in `SOLID` if you can't walk through it. `onLeft`, `onRight` and
+`onLid` draw flat on a face, like a screen or a sticker. `tests/iso.test.ts` paints every map character, so one with no
+art fails.
+
+**A pickup** is one entry in `ITEMS` in `src/ui/items.ts`: a glow color, a tag and a draw function around (0, 0). A
+stapler is six lines. **Something that comes and goes**, like a jam, can't be in the painted building. Add it to
+`thingsIn` in `stage.ts`, which only lists what's there this frame, and to `drawThing`. Draw it once with `sprite()`.
+
+The gate reads every line, comments too, and some everyday words fail it. Read `CONTENT_RULES` in `gate/rules.mjs`
+before naming things.
 
 ## Balance
 
